@@ -1,0 +1,80 @@
+name: Stock Agent Bot — 24/7
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Restart every 5 hours to stay within GitHub Actions job limits
+    - cron: '0 */5 * * *'
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330  # 5.5 hours max per job
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download NLTK data
+        run: |
+          python3 -c "import nltk; nltk.download('punkt_tab', quiet=True)" 2>/dev/null || true
+
+      - name: Create directories
+        run: mkdir -p logs data
+
+      - name: Write portfolio.json from secret
+        run: |
+          echo '${{ secrets.PORTFOLIO_JSON }}' > portfolio.json
+
+      - name: Write .env from secrets
+        run: |
+          cat > .env << 'ENVEOF'
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+          ALERT_EMAIL_TO=${{ secrets.ALERT_EMAIL_TO }}
+          SMS_GATEWAY=${{ secrets.SMS_GATEWAY }}
+          TIMEZONE=America/New_York
+          USE_SQLITE=1
+          BRIEFING_AUTO_SEND=1
+          SIGNAL_THRESHOLD=5
+          RUN_INTERVAL_MINUTES=15
+          TOTAL_PORTFOLIO_VALUE=129192
+          MAX_RISK_PER_TRADE_PCT=1.0
+          MAX_POSITION_SIZE_PCT=10.0
+          ENVEOF
+
+      - name: Run Telegram bot + scheduler (5.5 hours)
+        run: |
+          # Start scheduler in background
+          python3 agent.py --schedule --skip-checks > logs/scheduler.log 2>&1 &
+          SCHED_PID=$!
+          echo "Scheduler started (PID $SCHED_PID)"
+
+          # Start Telegram bot in background
+          python3 telegram_bot.py > logs/bot.log 2>&1 &
+          BOT_PID=$!
+          echo "Telegram bot started (PID $BOT_PID)"
+
+          # Wait 5.5 hours (19800 seconds), then let workflow end + auto-restart
+          echo "Running until $(date -d '+5.5 hours' 2>/dev/null || date -v+330M)"
+          sleep 19800
+
+          # Graceful shutdown
+          kill $SCHED_PID $BOT_PID 2>/dev/null || true
+        env:
+          PYTHONUNBUFFERED: "1"
