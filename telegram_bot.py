@@ -33,6 +33,7 @@ Usage:
 """
 
 import argparse
+import base64
 import json
 import logging
 import os
@@ -47,6 +48,191 @@ from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger(__name__)
+
+PORTFOLIO_FILE = Path("portfolio.json")
+OFFSET_FILE    = Path("logs/bot_offset.txt")
+
+
+# ---------------------------------------------------------------------------
+# Portfolio persistence helpers
+# ---------------------------------------------------------------------------
+
+def _load_portfolio() -> dict:
+    try:
+        return json.loads(PORTFOLIO_FILE.read_text())
+    except Exception as e:
+        logger.error("Failed to load portfolio.json: %s", e)
+        return {}
+
+
+def _save_portfolio(portfolio: dict) -> None:
+    PORTFOLIO_FILE.write_text(json.dumps(portfolio, indent=2))
+
+
+def _commit_portfolio_to_github(portfolio: dict) -> bool:
+    """Commit updated portfolio.json back to the repo so changes survive restarts."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo  = os.getenv("GITHUB_REPOSITORY", "")
+    if not token or not repo:
+        logger.debug("GITHUB_TOKEN/GITHUB_REPOSITORY not set — portfolio won't persist across restarts")
+        return False
+    try:
+        content = json.dumps(portfolio, indent=2)
+        encoded = base64.b64encode(content.encode()).decode()
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        url  = f"https://api.github.com/repos/{repo}/contents/portfolio.json"
+        resp = requests.get(url, headers=headers, timeout=15)
+        sha  = resp.json().get("sha", "")
+        payload = {
+            "message": "bot: record trade update",
+            "content": encoded,
+            "sha": sha,
+            "branch": "main",
+        }
+        resp = requests.put(url, json=payload, headers=headers, timeout=15)
+        if resp.status_code in (200, 201):
+            logger.info("Portfolio committed to GitHub")
+            return True
+        logger.warning("GitHub portfolio commit failed (%d): %s", resp.status_code, resp.text[:200])
+        return False
+    except Exception as e:
+        logger.error("GitHub commit error: %s", e)
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Trade feedback engine — principles from the world's best investors
+# ---------------------------------------------------------------------------
+
+def _get_trade_feedback(ticker: str, direction: str, shares: int, price: float, portfolio: dict) -> str:
+    """Generate investor-quality feedback on a manually recorded trade."""
+    lines = []
+    try:
+        import data_layer, technical_analysis, fundamental_analysis, signal_engine, position_sizing
+
+        df   = data_layer.fetch_daily_ohlcv(ticker)
+        if df.empty:
+            return "Could not fetch data for %s to generate feedback." % ticker
+
+        tech = technical_analysis.analyze(ticker, df)
+        fund = fundamental_analysis.analyze(ticker, "Technology")
+
+        current = tech.current_price
+        diff_pct = (current - price) / price * 100 if price else 0
+        diff_str = f"+{diff_pct:.1f}%" if diff_pct >= 0 else f"{diff_pct:.1f}%"
+
+        # Position sizing check
+        total_val  = float(portfolio.get("total_portfolio_value", 1) or 1)
+        pos_val    = shares * price
+        pos_pct    = pos_val / total_val * 100
+
+        lines.append("Trade Feedback: %s %s" % (direction, ticker))
+        lines.append("─" * 40)
+        lines.append("Your price: $%.2f  |  Current: $%.2f  (%s)" % (price, current, diff_str))
+        lines.append("Position: %d × $%.2f = $%s (%.1f%% of portfolio)" % (
+            shares, price, f"{pos_val:,.0f}", pos_pct))
+        lines.append("")
+
+        # Technical timing assessment
+        rsi_note = ""
+        if tech.rsi > 75:
+            rsi_note = "RSI %.0f — overbought territory. Lynch says: strong momentum, but check earnings growth justifies premium." % tech.rsi
+        elif tech.rsi > 60:
+            rsi_note = "RSI %.0f — healthy uptrend. Good timing." % tech.rsi
+        elif tech.rsi < 35:
+            rsi_note = "RSI %.0f — oversold. Buffett principle: be greedy when others are fearful." % tech.rsi
+        else:
+            rsi_note = "RSI %.0f — neutral zone. Watch for directional confirmation." % tech.rsi
+
+        above_ema21 = current > tech.ema21
+        above_200   = tech.price_above_200sma
+        trend_note  = "Price is %s EMA21 and %s 200-SMA. " % (
+            "above" if above_ema21 else "below",
+            "above" if above_200 else "below")
+        if direction == "BUY":
+            if above_200 and above_ema21:
+                trend_note += "Trend alignment is bullish — classic Lynch 'buy the trend' setup."
+            elif not above_200:
+                trend_note += "Caution: below 200-SMA. Buffett would want to see value, not just price action."
+        else:
+            if not above_ema21:
+                trend_note += "Selling below EMA21 is technically sound — momentum has shifted."
+
+        lines.append("Technical Timing:")
+        lines.append("  " + rsi_note)
+        lines.append("  " + trend_note)
+        lines.append("")
+
+        # Fundamental quality (Buffett / Greenblatt lens)
+        fund_score = fund.fundamental_score
+        lines.append("Fundamental Quality: %d/15" % fund_score)
+        if fund_score >= 10:
+            lines.append("  Strong quality business. Buffett principle: wonderful company at fair price.")
+        elif fund_score >= 6:
+            lines.append("  Decent fundamentals. Monitor for quality degradation.")
+        else:
+            lines.append("  Weak fundamentals. Greenblatt warns: only buy quality + cheap, not just cheap.")
+
+        if fund.pe_ratio and fund.pe_ratio > 0:
+            pe_note = "P/E: %.1f — " % fund.pe_ratio
+            if fund.pe_ratio < 15:
+                pe_note += "value zone (Buffett: margin of safety present)."
+            elif fund.pe_ratio < 30:
+                pe_note += "fairly valued for a growth stock (Lynch: PEG ratio matters more than raw P/E)."
+            else:
+                pe_note += "premium valuation. Ensure growth rate justifies the multiple (Lynch PEG rule)."
+            lines.append("  " + pe_note)
+        lines.append("")
+
+        # Risk management check
+        lines.append("Risk Management (Dalio principle):")
+        if pos_pct > 15:
+            lines.append("  ⚠ Position is %.1f%% of portfolio — concentrated. Dalio: diversify across uncorrelated assets." % pos_pct)
+        elif pos_pct > 10:
+            lines.append("  Position at %.1f%% — at max recommended size. No room to add." % pos_pct)
+        else:
+            lines.append("  Position size %.1f%% — within healthy limits." % pos_pct)
+
+        # Suggested stop
+        if direction == "BUY":
+            atr = getattr(tech, "atr", None) or (current * 0.02)
+            suggested_stop = round(current - 2 * atr, 2)
+            lines.append("  Suggested stop: $%.2f (2×ATR below entry)" % suggested_stop)
+        lines.append("")
+
+        # Overall grade
+        grade_score = 0
+        if direction == "BUY":
+            if above_200: grade_score += 2
+            if above_ema21: grade_score += 1
+            if 45 < tech.rsi < 70: grade_score += 2
+            if fund_score >= 8: grade_score += 2
+            if pos_pct <= 10: grade_score += 1
+            if diff_pct >= 0: grade_score += 1
+        else:  # SELL
+            if not above_ema21: grade_score += 2
+            if tech.rsi > 70: grade_score += 2
+            if diff_pct > 0: grade_score += 3
+            grade_score += 2  # Taking profits is always good discipline
+
+        if grade_score >= 8:
+            grade = "A — Excellent execution. Best investors would approve."
+        elif grade_score >= 6:
+            grade = "B — Good trade. Solid setup with manageable risk."
+        elif grade_score >= 4:
+            grade = "C — Average entry. Review timing and fundamentals."
+        else:
+            grade = "D — Below average setup. Consider waiting for better confirmation."
+
+        lines.append("Trade Grade: %s" % grade)
+
+    except Exception as e:
+        lines.append("(Feedback analysis error: %s)" % e)
+
+    return "\n".join(lines)
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -668,23 +854,201 @@ def cmd_grade(args=""):
         return "Grade error: %s" % e
 
 
+def cmd_bought(args=""):
+    """Record a buy trade. Usage: /bought TSLA 100 245.50"""
+    parts = args.strip().upper().split()
+    if len(parts) < 3:
+        return (
+            "Usage: /bought TICKER SHARES PRICE\n"
+            "Example: /bought TSLA 100 245.50\n\n"
+            "Records the trade, updates your portfolio, and gives investor-quality feedback."
+        )
+    ticker = parts[0]
+    try:
+        shares = int(parts[1])
+        price  = float(parts[2])
+    except ValueError:
+        return "Invalid format. Example: /bought TSLA 100 245.50"
+
+    portfolio = _load_portfolio()
+    holdings  = portfolio.get("holdings", [])
+
+    # Find existing position or create new one
+    existing = next((h for h in holdings if h.get("ticker") == ticker), None)
+    if existing:
+        old_shares = float(existing.get("shares", 0))
+        old_cost   = float(existing.get("avg_cost", 0))
+        new_shares = old_shares + shares
+        new_avg    = (old_shares * old_cost + shares * price) / new_shares if new_shares else price
+        existing["shares"]        = int(new_shares)
+        existing["avg_cost"]      = round(new_avg, 4)
+        existing["current_price"] = price
+        existing["cost_basis"]    = round(new_shares * new_avg, 2)
+        existing["current_value"] = round(new_shares * price, 2)
+        existing["unrealized_pnl"] = round((price - new_avg) * new_shares, 2)
+        existing["pnl_pct"]       = round((price - new_avg) / new_avg * 100, 2) if new_avg else 0
+        msg = f"Added to existing {ticker} position. New: {int(new_shares)} shares @ avg ${new_avg:.2f}"
+    else:
+        holdings.append({
+            "ticker":        ticker,
+            "shares":        shares,
+            "avg_cost":      round(price, 4),
+            "current_price": price,
+            "cost_basis":    round(shares * price, 2),
+            "current_value": round(shares * price, 2),
+            "unrealized_pnl": 0,
+            "pnl_pct":       0,
+            "sector":        "Unknown",
+            "strategy":      "Manual",
+        })
+        msg = f"New position opened: {ticker} {shares} shares @ ${price:.2f}"
+
+    portfolio["holdings"] = holdings
+    # Update total portfolio value
+    total_val = sum(float(h.get("current_value", 0) or 0) for h in holdings)
+    cash      = float(portfolio.get("available_cash", 0) or 0) - shares * price
+    portfolio["available_cash"]       = round(max(cash, 0), 2)
+    portfolio["total_portfolio_value"] = round(total_val + max(cash, 0), 2)
+    portfolio["_last_updated"]         = datetime.now().isoformat()
+
+    _save_portfolio(portfolio)
+    _commit_portfolio_to_github(portfolio)
+
+    # Get investor feedback
+    feedback = _get_trade_feedback(ticker, "BUY", shares, price, portfolio)
+    return msg + "\n\n" + feedback
+
+
+def cmd_sold(args=""):
+    """Record a sell trade. Usage: /sold TSLA 50 260.00"""
+    parts = args.strip().upper().split()
+    if len(parts) < 3:
+        return (
+            "Usage: /sold TICKER SHARES PRICE\n"
+            "Example: /sold TSLA 50 260.00\n\n"
+            "Records the exit, calculates P&L, and gives trade feedback."
+        )
+    ticker = parts[0]
+    try:
+        shares = int(parts[1])
+        price  = float(parts[2])
+    except ValueError:
+        return "Invalid format. Example: /sold TSLA 50 260.00"
+
+    portfolio = _load_portfolio()
+    holdings  = portfolio.get("holdings", [])
+    existing  = next((h for h in holdings if h.get("ticker") == ticker), None)
+
+    if not existing:
+        return f"{ticker} not found in your portfolio. Use /sold {ticker} {shares} {price:.2f} after adding it via /bought."
+
+    avg_cost     = float(existing.get("avg_cost", price))
+    held_shares  = float(existing.get("shares", 0))
+    sold_shares  = min(shares, int(held_shares))
+    realized_pnl = round((price - avg_cost) * sold_shares, 2)
+    pnl_pct      = round((price - avg_cost) / avg_cost * 100, 2) if avg_cost else 0
+    pnl_sign     = "+" if realized_pnl >= 0 else ""
+
+    if sold_shares >= held_shares:
+        holdings.remove(existing)
+        position_msg = f"Position closed: {ticker} (all {int(held_shares)} shares)"
+    else:
+        remaining = int(held_shares - sold_shares)
+        existing["shares"]        = remaining
+        existing["current_value"] = round(remaining * price, 2)
+        existing["unrealized_pnl"] = round((price - avg_cost) * remaining, 2)
+        position_msg = f"Partial exit: {ticker} — {sold_shares} sold, {remaining} remaining"
+
+    # Record realized trade
+    realized_trades = portfolio.get("realized_trades_ytd", [])
+    realized_trades.append({
+        "ticker":       ticker,
+        "shares":       sold_shares,
+        "avg_cost":     avg_cost,
+        "exit_price":   price,
+        "realized_pnl": realized_pnl,
+        "pnl_pct":      pnl_pct,
+        "date":         datetime.now().strftime("%Y-%m-%d"),
+    })
+    portfolio["realized_trades_ytd"] = realized_trades
+
+    # Update realized P&L YTD
+    prev_realized = float(portfolio.get("realized_pnl_ytd", 0) or 0)
+    portfolio["realized_pnl_ytd"] = round(prev_realized + realized_pnl, 2)
+    portfolio["holdings"]         = holdings
+    cash = float(portfolio.get("available_cash", 0) or 0) + sold_shares * price
+    total_val = sum(float(h.get("current_value", 0) or 0) for h in holdings)
+    portfolio["available_cash"]        = round(cash, 2)
+    portfolio["total_portfolio_value"] = round(total_val + cash, 2)
+    portfolio["_last_updated"]         = datetime.now().isoformat()
+
+    _save_portfolio(portfolio)
+    _commit_portfolio_to_github(portfolio)
+
+    result_line = f"P&L: {sold_shares} × ${price - avg_cost:+.2f} = {pnl_sign}${realized_pnl:,.2f} ({pnl_sign}{pnl_pct:.1f}%)"
+    feedback    = _get_trade_feedback(ticker, "SELL", sold_shares, price, portfolio)
+    return f"{position_msg}\n{result_line}\n\n{feedback}"
+
+
+def cmd_trades(args=""):
+    """Show recently recorded trades."""
+    try:
+        portfolio = _load_portfolio()
+        trades    = portfolio.get("realized_trades_ytd", [])
+        if not trades:
+            return "No realized trades recorded yet.\n\nUse /sold TSLA 50 260 to record a sale."
+
+        limit  = 10
+        recent = trades[-limit:][::-1]
+        lines  = ["Recent Trades (%d total YTD)" % len(trades), "─" * 35]
+        for t in recent:
+            sign = "+" if float(t.get("realized_pnl", 0)) >= 0 else ""
+            lines.append("%s  %s × %s  %s$%.0f (%s%.1f%%)" % (
+                t.get("date", "?"),
+                t.get("ticker", "?"),
+                t.get("shares", "?"),
+                sign,
+                abs(float(t.get("realized_pnl", 0))),
+                sign,
+                abs(float(t.get("pnl_pct", 0))),
+            ))
+
+        ytd = float(portfolio.get("realized_pnl_ytd", 0) or 0)
+        ytd_sign = "+" if ytd >= 0 else ""
+        lines.append("")
+        lines.append("Realized YTD: %s$%.2f" % (ytd_sign, ytd))
+        return "\n".join(lines)
+    except Exception as e:
+        return "Trades error: %s" % e
+
+
 def cmd_help(args=""):
     """List available commands."""
     return (
         "Stock Agent Commands:\n"
         "─────────────────────\n"
+        "TRADE RECORDING\n"
+        "/bought TSLA 100 245.50 — Record a buy + get feedback\n"
+        "/sold TSLA 50 260.00   — Record a sell + P&L + feedback\n"
+        "/trades    — Recent trade history\n"
+        "\n"
+        "ANALYSIS\n"
         "/buy       — BUY opportunities (watchlist scan)\n"
         "/sell      — Which holdings to sell?\n"
         "/grade TSLA — Full graded analysis + options\n"
         "/options TSLA — Options strategy suggestion\n"
         "/check TSLA — Analyze any ticker\n"
         "/scan      — Quick scan (holdings + top buys)\n"
+        "\n"
+        "PORTFOLIO\n"
         "/status    — Portfolio summary\n"
         "/positions — All open positions\n"
         "/perf      — Performance history + stats\n"
         "/risk      — Risk summary\n"
         "/regime    — Market regime\n"
         "/briefing  — Morning briefing\n"
+        "\n"
+        "RESEARCH\n"
         "/earnings  — Upcoming earnings\n"
         "/news      — Portfolio news\n"
         "/volume    — Unusual volume spikes\n"
@@ -695,9 +1059,8 @@ def cmd_help(args=""):
         "/weekly    — Weekly report\n"
         "/ibsync    — Sync from IB\n"
         "/alerts    — Price alerts\n"
-        "/help      — This message\n"
         "\n"
-        "Tip: Just type a ticker (e.g. NVDA) to check it.\n"
+        "Tip: Type a ticker (e.g. NVDA) to analyze it.\n"
         "All alerts include grade, logic, risk, and options play."
     )
 
@@ -708,6 +1071,9 @@ COMMANDS = {
     "/pos": cmd_positions,
     "/sell": cmd_sell,
     "/buy": cmd_buy,
+    "/bought": cmd_bought,
+    "/sold": cmd_sold,
+    "/trades": cmd_trades,
     "/check": cmd_check,
     "/scan": cmd_scan,
     "/risk": cmd_risk,
@@ -760,6 +1126,25 @@ def handle_message(text, chat_id):
     return "Unknown command: %s\n\nType /help for available commands." % command
 
 
+def _load_offset() -> int:
+    """Load the last seen update offset from disk (persists within a run)."""
+    try:
+        if OFFSET_FILE.exists():
+            val = OFFSET_FILE.read_text().strip()
+            return int(val) if val else None
+    except Exception:
+        pass
+    return None
+
+
+def _save_offset(offset: int) -> None:
+    try:
+        OFFSET_FILE.parent.mkdir(exist_ok=True)
+        OFFSET_FILE.write_text(str(offset))
+    except Exception:
+        pass
+
+
 def run_bot():
     """Main bot loop — long polls for messages."""
     if not TOKEN:
@@ -776,14 +1161,28 @@ def run_bot():
     print("Stock Agent Telegram Bot starting...")
     print("Listening for commands...")
 
-    offset = None
+    # Restore offset so we don't replay old messages after a restart
+    offset = _load_offset()
+
+    # Delete any pending webhook so long-polling works cleanly
+    try:
+        requests.post(API_BASE + "/deleteWebhook", timeout=10)
+    except Exception:
+        pass
+
+    consecutive_errors = 0
+
     while True:
         try:
             updates = get_updates(offset=offset, timeout=30)
+            consecutive_errors = 0  # Reset on success
+
             for update in updates:
                 offset = update["update_id"] + 1
-                msg = update.get("message", {})
-                text = msg.get("text", "")
+                _save_offset(offset)
+
+                msg     = update.get("message", {})
+                text    = msg.get("text", "")
                 chat_id = msg.get("chat", {}).get("id")
 
                 if not text or not chat_id:
@@ -806,11 +1205,22 @@ def run_bot():
         except KeyboardInterrupt:
             print("\nBot stopped.")
             break
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 409:
+                # 409 Conflict — another bot instance is already long-polling.
+                # This happens briefly during restarts. Wait and retry.
+                consecutive_errors += 1
+                wait = min(10 * consecutive_errors, 60)
+                logger.warning("409 Conflict (duplicate instance). Waiting %ds for other instance to die...", wait)
+                time.sleep(wait)
+            else:
+                logger.error("HTTP error in bot loop: %s", e)
+                time.sleep(5)
         except Exception as e:
+            consecutive_errors += 1
             logger.error("Bot loop error: %s", e)
-            # Exponential backoff for network issues (e.g. after sleep/wake)
             import random
-            wait = min(5 + random.randint(0, 5), 30)
+            wait = min(5 * consecutive_errors + random.randint(0, 3), 45)
             logger.info("Retrying in %d seconds...", wait)
             time.sleep(wait)
 

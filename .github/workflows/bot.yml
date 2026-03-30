@@ -3,8 +3,8 @@ name: Stock Agent Bot — 24/7
 on:
   workflow_dispatch:
   schedule:
-    # Restart every 5 hours to stay within GitHub Actions job limits
-    - cron: '0 */5 * * *'
+    # Restart every 6 hours — job runs 5.5 h, giving a 30-min overlap-free buffer
+    - cron: '0 */6 * * *'
 
 jobs:
   run-bot:
@@ -33,9 +33,16 @@ jobs:
       - name: Create directories
         run: mkdir -p logs data
 
-      - name: Write portfolio.json from secret
+      - name: Write portfolio.json from secret (only if repo copy is absent/empty)
         run: |
-          echo '${{ secrets.PORTFOLIO_JSON }}' > portfolio.json
+          # If the repo already has a committed portfolio.json (from /bought or /sold),
+          # use that. Otherwise fall back to the secret (initial setup).
+          if [ ! -s portfolio.json ]; then
+            echo '${{ secrets.PORTFOLIO_JSON }}' > portfolio.json
+            echo "Wrote portfolio.json from secret (no committed copy found)"
+          else
+            echo "Using committed portfolio.json from repo"
+          fi
 
       - name: Write .env from secrets
         run: |
@@ -78,3 +85,5 @@ jobs:
           kill $SCHED_PID $BOT_PID 2>/dev/null || true
         env:
           PYTHONUNBUFFERED: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}

@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import smtplib
+import threading
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -25,6 +26,177 @@ logger = logging.getLogger(__name__)
 LOGS_DIR = Path("logs")
 LOGS_DIR.mkdir(exist_ok=True)
 DASHBOARD_LOG = LOGS_DIR / "dashboard.csv"
+
+# ---------------------------------------------------------------------------
+# Daily digest queue — collects all alerts and reports into ONE email per day
+# ---------------------------------------------------------------------------
+
+_queue_lock = threading.Lock()
+_daily_alert_queue = []   # list of {"alert", "plan", "graded_text", "ts"}
+_queued_briefing = None   # morning briefing plain text
+
+
+def queue_alert_for_digest(alert: TradeAlert, plan: PositionPlan, graded_text: str = None) -> None:
+    """Queue a trade alert so it ends up in the end-of-day digest instead of a separate email."""
+    with _queue_lock:
+        _daily_alert_queue.append({
+            "alert": alert,
+            "plan": plan,
+            "graded_text": graded_text,
+            "ts": datetime.now(),
+        })
+    logger.debug("Alert queued for digest: %s %s", alert.direction, alert.ticker)
+
+
+def set_briefing_for_digest(text: str) -> None:
+    """Store the morning briefing text so it appears in the digest email."""
+    global _queued_briefing
+    _queued_briefing = text
+
+
+def _build_digest_html(alerts, briefing_text, eod_text, today_str):
+    """Build the full HTML for the daily digest email."""
+    buy_alerts  = [a for a in alerts if a["alert"].direction == "BUY"]
+    sell_alerts = [a for a in alerts if a["alert"].direction != "BUY"]
+
+    def alert_card(item):
+        a = item["alert"]
+        p = item["plan"]
+        color = "#1b5e20" if a.direction == "BUY" else "#b71c1c"
+        badge_bg = "#2e7d32" if a.direction == "BUY" else "#c62828"
+        signals = ", ".join(s[0] for s in a.triggered_signals[:5])
+        ts = item["ts"].strftime("%H:%M")
+        graded = item.get("graded_text") or ""
+        grade_line = ""
+        for line in graded.splitlines():
+            if "Grade:" in line or "grade:" in line.lower():
+                grade_line = f"<span style='color:{color};font-weight:bold'>{line.strip()}</span><br>"
+                break
+        return f"""
+        <div style="border:1px solid #ddd;border-radius:8px;margin:8px 0;overflow:hidden;">
+          <div style="background:{badge_bg};color:white;padding:10px 14px;display:flex;justify-content:space-between;">
+            <strong>{a.direction} {a.ticker}</strong>
+            <span>Score: {a.signal_score} &nbsp;|&nbsp; {ts}</span>
+          </div>
+          <div style="padding:12px 14px;font-size:13px;">
+            {grade_line}
+            <table style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="padding:3px 6px;color:#555;">Entry</td><td style="padding:3px 6px;"><b>${p.entry_price:,.2f}</b></td>
+                <td style="padding:3px 6px;color:#555;">Stop</td><td style="padding:3px 6px;">${p.stop_loss:,.2f}</td>
+                <td style="padding:3px 6px;color:#555;">Shares</td><td style="padding:3px 6px;">{p.shares}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 6px;color:#555;">T1</td><td style="padding:3px 6px;">${p.target_1:,.2f}</td>
+                <td style="padding:3px 6px;color:#555;">T2</td><td style="padding:3px 6px;">${p.target_2:,.2f}</td>
+                <td style="padding:3px 6px;color:#555;">Max Loss</td><td style="padding:3px 6px;">${p.max_loss:,.2f}</td>
+              </tr>
+            </table>
+            <p style="margin:6px 0 0;color:#666;font-size:12px;">Signals: {signals}</p>
+          </div>
+        </div>"""
+
+    alert_html = ""
+    if buy_alerts:
+        alert_html += "<h3 style='color:#2e7d32;margin:16px 0 6px;'>🟢 BUY Signals (%d)</h3>" % len(buy_alerts)
+        alert_html += "".join(alert_card(a) for a in buy_alerts)
+    if sell_alerts:
+        alert_html += "<h3 style='color:#c62828;margin:16px 0 6px;'>🔴 SELL / EXIT Signals (%d)</h3>" % len(sell_alerts)
+        alert_html += "".join(alert_card(a) for a in sell_alerts)
+    if not alerts:
+        alert_html = "<p style='color:#777;font-style:italic;'>No trade signals triggered today.</p>"
+
+    briefing_section = ""
+    if briefing_text:
+        briefing_section = """
+        <h2 style="color:#1565c0;border-bottom:2px solid #1565c0;padding-bottom:6px;">Morning Briefing</h2>
+        <pre style="background:#f5f5f5;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;">%s</pre>
+        """ % briefing_text[:3000]
+
+    eod_section = ""
+    if eod_text:
+        eod_section = """
+        <h2 style="color:#4a148c;border-bottom:2px solid #4a148c;padding-bottom:6px;">End-of-Day Report</h2>
+        <pre style="background:#f3e5f5;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;">%s</pre>
+        """ % eod_text[:3000]
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>body{{font-family:Arial,sans-serif;max-width:680px;margin:0 auto;color:#222;}}
+h1{{background:linear-gradient(135deg,#0d47a1,#1565c0);color:white;padding:20px;margin:0;border-radius:8px 8px 0 0;}}
+.subtitle{{background:#1565c0;color:#cfe2ff;padding:6px 20px;font-size:13px;margin:0;}}
+.body{{padding:16px;}}
+</style></head>
+<body>
+<h1>📊 Daily Market Digest</h1>
+<p class="subtitle">{today_str} &nbsp;|&nbsp; {len(buy_alerts)} BUY &nbsp;|&nbsp; {len(sell_alerts)} SELL</p>
+<div class="body">
+{briefing_section}
+<h2 style="color:#e65100;border-bottom:2px solid #e65100;padding-bottom:6px;">Today's Trade Signals ({len(alerts)} total)</h2>
+{alert_html}
+{eod_section}
+<hr style="margin:24px 0;border:none;border-top:1px solid #eee;">
+<p style="color:#aaa;font-size:11px;text-align:center;">Stock Agent Bot &mdash; automated analysis only, not financial advice.</p>
+</div>
+</body></html>"""
+
+
+def send_daily_digest(eod_text: str = None) -> bool:
+    """Build and send the ONE daily email with all alerts, briefing, and EOD report."""
+    global _queued_briefing
+
+    host     = os.getenv("SMTP_HOST", "")
+    port     = int(os.getenv("SMTP_PORT", "587"))
+    user     = os.getenv("SMTP_USER", "")
+    password = os.getenv("SMTP_PASSWORD", "")
+    to_addr  = os.getenv("ALERT_EMAIL_TO", "")
+
+    if not all([host, user, password, to_addr]) or user.startswith("your_"):
+        logger.info("Email not configured — skipping daily digest")
+        return False
+
+    with _queue_lock:
+        alerts = list(_daily_alert_queue)
+        _daily_alert_queue.clear()
+
+    briefing_snap   = _queued_briefing
+    _queued_briefing = None
+
+    today_str = datetime.now().strftime("%A, %B %d, %Y")
+    buy_count  = sum(1 for a in alerts if a["alert"].direction == "BUY")
+    sell_count = len(alerts) - buy_count
+    subject    = f"📊 Daily Digest — {datetime.now().strftime('%b %d')} | {buy_count} BUY, {sell_count} SELL"
+
+    html = _build_digest_html(alerts, briefing_snap, eod_text, today_str)
+
+    # Plain-text fallback
+    lines = [f"DAILY DIGEST — {today_str}", "=" * 50, ""]
+    if briefing_snap:
+        lines += ["MORNING BRIEFING", "-" * 30, briefing_snap[:1500], ""]
+    lines += ["TRADE SIGNALS (%d total)" % len(alerts), "-" * 30]
+    for item in alerts:
+        a, p = item["alert"], item["plan"]
+        lines.append(f"{a.direction} {a.ticker}  score:{a.signal_score}  entry:${p.entry_price:,.2f}  stop:${p.stop_loss:,.2f}  T1:${p.target_1:,.2f}")
+    if eod_text:
+        lines += ["", "END-OF-DAY REPORT", "-" * 30, eod_text[:1500]]
+    text = "\n".join(lines)
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = user
+        msg["To"]      = to_addr
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP(host, port) as server:
+            server.starttls()
+            server.login(user, password)
+            server.sendmail(user, [to_addr], msg.as_string())
+        logger.info("Daily digest sent: %d alerts (%d BUY, %d SELL)", len(alerts), buy_count, sell_count)
+        return True
+    except Exception as e:
+        logger.error("Daily digest send failed: %s", e)
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -508,8 +680,10 @@ def notify(alert: TradeAlert, plan: PositionPlan) -> None:
     else:
         send_telegram(alert, plan)
 
-    # Send through other configured channels (standard format)
-    send_email(alert, plan)
+    # Queue alert for end-of-day digest instead of sending an individual email
+    queue_alert_for_digest(alert, plan, graded_text)
+
+    # Send through other configured channels (standard format — no email, handled by digest)
     send_sms(alert, plan)
     send_slack(alert, plan)
     send_discord(alert, plan)

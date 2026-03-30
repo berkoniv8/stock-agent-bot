@@ -324,18 +324,21 @@ def run_scan(paper_mode: bool = False) -> None:
 
 
 def _send_daily_briefing() -> None:
-    """Generate and send the daily pre-market briefing."""
+    """Generate morning briefing, send to Telegram, and queue text for EOD digest."""
     try:
         briefing = daily_briefing.generate_briefing()
         text = daily_briefing.format_briefing(briefing)
         logger.info("Daily briefing generated")
+        # Send to Telegram for real-time delivery
         daily_briefing.send_briefing(text)
+        # Store text so it appears in the single daily email digest
+        notifications.set_briefing_for_digest(text)
     except Exception as e:
         logger.error("Failed to send daily briefing: %s", e)
 
 
 def _send_eod_report() -> None:
-    """Generate and send end-of-day report."""
+    """Generate and send end-of-day report (Telegram only; email is in the digest)."""
     try:
         report = eod_report.generate_report()
         eod_report.save_report(report)
@@ -343,6 +346,22 @@ def _send_eod_report() -> None:
         logger.info("EOD report generated and sent")
     except Exception as e:
         logger.error("Failed to generate EOD report: %s", e)
+
+
+def _send_daily_digest() -> None:
+    """Send the ONE daily email — all trade alerts + briefing + EOD report combined."""
+    try:
+        eod_text = None
+        try:
+            report = eod_report.generate_report()
+            eod_report.save_report(report)
+            eod_text = eod_report.format_report(report)
+        except Exception as e:
+            logger.debug("EOD report for digest failed: %s", e)
+        notifications.send_daily_digest(eod_text=eod_text)
+        logger.info("Daily digest email sent")
+    except Exception as e:
+        logger.error("Failed to send daily digest: %s", e)
 
 
 def _take_performance_snapshot() -> None:
@@ -592,7 +611,7 @@ def main():
         schedule.every().day.at(briefing_time).do(_send_daily_briefing)
         logger.info("Daily briefing scheduled at %s", briefing_time)
 
-        # End-of-day report at 16:15
+        # End-of-day report at 16:15 (Telegram only — email is in the digest)
         eod_time = os.getenv("EOD_REPORT_TIME", "16:15")
         schedule.every().day.at(eod_time).do(_send_eod_report)
         logger.info("EOD report scheduled at %s", eod_time)
@@ -600,6 +619,10 @@ def main():
         # Daily performance snapshot at 16:20 (after EOD report)
         schedule.every().day.at("16:20").do(_take_performance_snapshot)
         logger.info("Performance snapshot scheduled at 16:20")
+
+        # ONE daily digest email at 16:25 — all alerts + briefing + EOD report combined
+        schedule.every().day.at("16:25").do(_send_daily_digest)
+        logger.info("Daily digest email scheduled at 16:25")
 
         # Health check every 4 hours
         schedule.every(4).hours.do(_run_health_check)
