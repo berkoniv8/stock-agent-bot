@@ -55,6 +55,8 @@ jobs:
           SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO=${{ secrets.ALERT_EMAIL_TO }}
           SMS_GATEWAY=${{ secrets.SMS_GATEWAY }}
+          IB_FLEX_TOKEN=${{ secrets.IB_FLEX_TOKEN }}
+          IB_FLEX_QUERY_ID=${{ secrets.IB_FLEX_QUERY_ID }}
           TIMEZONE=America/New_York
           USE_SQLITE=1
           BRIEFING_AUTO_SEND=1

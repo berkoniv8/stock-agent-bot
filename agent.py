@@ -461,7 +461,7 @@ def _check_sector_rotation() -> None:
 
 
 def _sync_ib_portfolio() -> None:
-    """Sync portfolio positions from Interactive Brokers (read-only)."""
+    """Sync portfolio positions from Interactive Brokers (read-only, local TWS)."""
     if not is_market_hours():
         return
     try:
@@ -475,6 +475,19 @@ def _sync_ib_portfolio() -> None:
                 logger.debug("IB sync skipped: %s", result.get("error", "unavailable"))
     except Exception as e:
         logger.debug("IB sync failed: %s", e)
+
+
+def _flex_sync_trades() -> None:
+    """Auto-detect new IB trades via Flex Web Service (works without local TWS)."""
+    try:
+        import ib_flex
+        if not ib_flex.is_configured():
+            return
+        new_trades = ib_flex.sync_new_trades(notify=True)
+        if new_trades:
+            logger.info("IB Flex: %d new trade(s) auto-synced", len(new_trades))
+    except Exception as e:
+        logger.debug("IB Flex sync failed: %s", e)
 
 
 def _send_weekly_report() -> None:
@@ -623,6 +636,10 @@ def main():
         # ONE daily digest email at 16:25 — all alerts + briefing + EOD report combined
         schedule.every().day.at("16:25").do(_send_daily_digest)
         logger.info("Daily digest email scheduled at 16:25")
+
+        # IB Flex trade auto-detection every 15 min (works without local TWS)
+        schedule.every(15).minutes.do(_flex_sync_trades)
+        logger.info("IB Flex trade auto-sync scheduled every 15 minutes")
 
         # Health check every 4 hours
         schedule.every(4).hours.do(_run_health_check)

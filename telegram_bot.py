@@ -1022,14 +1022,51 @@ def cmd_trades(args=""):
         return "Trades error: %s" % e
 
 
+def cmd_sync(args=""):
+    """Force an immediate IB Flex trade sync on demand."""
+    try:
+        import ib_flex
+        if not ib_flex.is_configured():
+            return (
+                "IB Flex not configured yet.\n\n"
+                "To enable full auto-sync:\n"
+                "1. Log in to IB Account Management\n"
+                "2. Reports → Flex Queries → Create New\n"
+                "   (Activity query, Trades section, XML format)\n"
+                "   Note the Query ID shown in the list\n"
+                "3. Settings → Account Settings → Flex Web Service\n"
+                "   Enable it and copy your Token\n"
+                "4. Add to GitHub Secrets:\n"
+                "   IB_FLEX_TOKEN    = <your token>\n"
+                "   IB_FLEX_QUERY_ID = <your query ID>\n\n"
+                "Once set, trades auto-detect every 15 min.\n"
+                "Use /sync to force an immediate check."
+            )
+        send_message("Checking IB for new trades... (may take ~15s)")
+        new_trades = ib_flex.sync_new_trades(notify=False)
+        if not new_trades:
+            return "No new trades found since last sync."
+        lines = ["Synced %d new trade(s):" % len(new_trades)]
+        for t in new_trades:
+            pnl     = t.get("realized_pnl", 0)
+            pnl_str = " | P&L: %s$%.2f" % ("+" if pnl >= 0 else "", pnl) if pnl else ""
+            lines.append("  %s %s × %d @ $%.2f%s" % (
+                t["action"], t["ticker"], int(t["quantity"]), t["price"], pnl_str))
+        lines.append("\nPortfolio updated and committed.")
+        return "\n".join(lines)
+    except Exception as e:
+        return "Sync error: %s" % e
+
+
 def cmd_help(args=""):
     """List available commands."""
     return (
         "Stock Agent Commands:\n"
         "─────────────────────\n"
         "TRADE RECORDING\n"
-        "/bought TSLA 100 245.50 — Record a buy + get feedback\n"
-        "/sold TSLA 50 260.00   — Record a sell + P&L + feedback\n"
+        "/sync      — Force IB Flex sync (auto every 15 min)\n"
+        "/bought TSLA 100 245.50 — Manual buy entry + feedback\n"
+        "/sold TSLA 50 260.00   — Manual sell entry + P&L\n"
         "/trades    — Recent trade history\n"
         "\n"
         "ANALYSIS\n"
@@ -1087,6 +1124,7 @@ COMMANDS = {
     "/rotation": cmd_rotation,
     "/weekly": cmd_weekly,
     "/ibsync": cmd_ibsync,
+    "/sync": cmd_sync,
     "/volume": cmd_volume,
     "/upgrades": cmd_upgrades,
     "/performance": cmd_performance,
