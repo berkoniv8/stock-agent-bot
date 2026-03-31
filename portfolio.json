@@ -1,6 +1,6 @@
 {
-  "total_portfolio_value": 129316.36,
-  "available_cash": 5550.0,
+  "total_portfolio_value": 129256.36,
+  "available_cash": 8130.0,
   "max_risk_per_trade_pct": 1.0,
   "max_position_size_pct": 10.0,
   "holdings": [
@@ -111,18 +111,6 @@
       "pnl_pct": -1.7417222042800953,
       "sector": "Communication Services",
       "strategy": "long_term"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 300.0,
-      "avg_cost": 11.34,
-      "current_price": 8.800000190734863,
-      "current_value": 2640.0,
-      "cost_basis": 3402.0,
-      "unrealized_pnl": -762.0,
-      "pnl_pct": -22.39858906525573,
-      "sector": "Technology",
-      "strategy": "trade"
     },
     {
       "ticker": "TSLA",
@@ -305,12 +293,21 @@
       "realized_pnl": -1218.85,
       "pnl_pct": -18.01,
       "date": "2026-03-31"
+    },
+    {
+      "ticker": "ONDS",
+      "shares": 300.0,
+      "avg_cost": 11.34,
+      "exit_price": 8.6,
+      "realized_pnl": -822.0,
+      "pnl_pct": -24.16,
+      "date": "2026-03-31"
     }
   ],
-  "realized_pnl_ytd": -11123.04,
+  "realized_pnl_ytd": -11945.04,
   "unrealized_pnl_total": 13846.4,
   "_broker": "Interactive Brokers",
   "_account": "clientam.com",
-  "_last_updated": "2026-03-31T21:32:21.164944",
+  "_last_updated": "2026-03-31T21:34:01.066439",
   "last_ib_sync": "2026-03-27T23:53:02.308618+00:00"
 }
