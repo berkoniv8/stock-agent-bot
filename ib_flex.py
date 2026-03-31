@@ -44,9 +44,6 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-FLEX_TOKEN    = os.getenv("IB_FLEX_TOKEN", "")
-FLEX_QUERY_ID = os.getenv("IB_FLEX_QUERY_ID", "")
-
 FLEX_REQUEST_URL  = "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest"
 FLEX_DOWNLOAD_URL = "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.GetStatement"
 
@@ -59,16 +56,19 @@ PORTFOLIO_FILE    = Path("portfolio.json")
 # ---------------------------------------------------------------------------
 
 def is_configured() -> bool:
-    return bool(FLEX_TOKEN and FLEX_QUERY_ID and
-                not FLEX_TOKEN.startswith("your_"))
+    token    = os.getenv("IB_FLEX_TOKEN", "")
+    query_id = os.getenv("IB_FLEX_QUERY_ID", "")
+    return bool(token and query_id and not token.startswith("your_"))
 
 
 def _request_flex_report() -> str | None:
     """Step 1 — ask IB to prepare the report; returns a reference code."""
+    token    = os.getenv("IB_FLEX_TOKEN", "")
+    query_id = os.getenv("IB_FLEX_QUERY_ID", "")
     try:
         resp = requests.get(
             FLEX_REQUEST_URL,
-            params={"t": FLEX_TOKEN, "q": FLEX_QUERY_ID, "v": "3"},
+            params={"t": token, "q": query_id, "v": "3"},
             timeout=30,
         )
         resp.raise_for_status()
@@ -88,11 +88,12 @@ def _request_flex_report() -> str | None:
 
 def _download_flex_report(ref_code: str, retries: int = 8, delay: int = 5) -> str | None:
     """Step 2 — download the prepared report (IB may need a few seconds)."""
+    token = os.getenv("IB_FLEX_TOKEN", "")
     for attempt in range(retries):
         try:
             resp = requests.get(
                 FLEX_DOWNLOAD_URL,
-                params={"t": FLEX_TOKEN, "q": ref_code, "v": "3"},
+                params={"t": token, "q": ref_code, "v": "3"},
                 timeout=30,
             )
             resp.raise_for_status()
