@@ -170,6 +170,10 @@ def _parse_flex_trades(xml_data: str) -> list[dict]:
             if trade_date and len(trade_date) == 8:
                 trade_date = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:8]}"
 
+            # Only process today's trades — guard against Flex query returning extra days
+            if trade_date and trade_date != today:
+                continue
+
             # Normalise action: handle "BUY", "SELL", "BOT", "SLD"
             if action in ("BOT", "B"):
                 action = "BUY"
@@ -295,7 +299,7 @@ def apply_trade_to_portfolio(trade: dict, portfolio: dict) -> dict:
             old_cost   = float(existing.get("avg_cost", 0))
             new_shares = old_shares + qty
             new_avg    = (old_shares * old_cost + qty * price) / new_shares if new_shares else price
-            existing["shares"]         = int(new_shares)
+            existing["shares"]         = round(new_shares, 4)
             existing["avg_cost"]       = round(new_avg, 4)
             existing["current_price"]  = price
             existing["cost_basis"]     = round(new_shares * new_avg, 2)
@@ -305,7 +309,7 @@ def apply_trade_to_portfolio(trade: dict, portfolio: dict) -> dict:
         else:
             holdings.append({
                 "ticker":        ticker,
-                "shares":        int(qty),
+                "shares":        qty,
                 "avg_cost":      round(price, 4),
                 "current_price": price,
                 "cost_basis":    round(qty * price, 2),
@@ -329,7 +333,7 @@ def apply_trade_to_portfolio(trade: dict, portfolio: dict) -> dict:
             if remaining <= 0:
                 holdings.remove(existing)
             else:
-                existing["shares"]         = int(remaining)
+                existing["shares"]         = round(remaining, 4)
                 existing["current_value"]  = round(remaining * price, 2)
                 existing["unrealized_pnl"] = round((price - avg_cost) * remaining, 2)
         else:
@@ -341,7 +345,7 @@ def apply_trade_to_portfolio(trade: dict, portfolio: dict) -> dict:
         realized_trades = portfolio.get("realized_trades_ytd", [])
         realized_trades.append({
             "ticker":       ticker,
-            "shares":       int(sold),
+            "shares":       round(sold, 4),
             "avg_cost":     avg_cost,
             "exit_price":   price,
             "realized_pnl": realized_pnl,

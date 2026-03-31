@@ -118,7 +118,13 @@ def _get_trade_feedback(ticker: str, direction: str, shares: int, price: float, 
             return "Could not fetch data for %s to generate feedback." % ticker
 
         tech = technical_analysis.analyze(ticker, df)
-        fund = fundamental_analysis.analyze(ticker, "Technology")
+        # Look up actual sector from portfolio instead of hardcoding "Technology"
+        sector = "Technology"
+        for h in portfolio.get("holdings", []):
+            if h.get("ticker") == ticker:
+                sector = h.get("sector", "Technology")
+                break
+        fund = fundamental_analysis.analyze(ticker, sector)
 
         current = tech.current_price
         diff_pct = (current - price) / price * 100 if price else 0
@@ -269,6 +275,8 @@ def get_updates(offset=None, timeout=30):
         resp = requests.get(API_BASE + "/getUpdates", params=params, timeout=timeout + 5)
         resp.raise_for_status()
         return resp.json().get("result", [])
+    except requests.exceptions.HTTPError:
+        raise  # Let run_bot() handle HTTP errors (409 Conflict, etc.)
     except Exception as e:
         logger.error("getUpdates failed: %s", e)
         return []
@@ -299,7 +307,7 @@ def get_chat_id():
 def cmd_status(args=""):
     """Portfolio summary."""
     try:
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         total = portfolio.get("total_portfolio_value", 0)
         cash = portfolio.get("available_cash", 0)
         holdings = portfolio.get("holdings", [])
@@ -336,7 +344,7 @@ def cmd_status(args=""):
 def cmd_positions(args=""):
     """List all open positions."""
     try:
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         holdings = portfolio.get("holdings", [])
         if not holdings:
             return "No open positions."
@@ -371,7 +379,7 @@ def cmd_check(args=""):
     ticker = args.strip().upper() if args else ""
     if not ticker:
         try:
-            portfolio = json.load(open("portfolio.json"))
+            portfolio = _load_portfolio()
             tickers = sorted(h["ticker"] for h in portfolio.get("holdings", []))
             return "Usage: /check TSLA\n\nYour holdings:\n%s\n\nOr just type a ticker name (e.g. NVDA)" % " ".join(tickers)
         except Exception:
@@ -430,7 +438,7 @@ def cmd_scan(args=""):
         import fundamental_analysis
 
         watchlist = data_layer.load_watchlist()
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         held_tickers = set(h["ticker"] for h in portfolio.get("holdings", []))
 
         hold_signals = []
@@ -481,7 +489,7 @@ def cmd_buy(args=""):
         import position_sizing
 
         watchlist = data_layer.load_watchlist()
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         held_tickers = set(h["ticker"] for h in portfolio.get("holdings", []))
 
         # Optional: filter by sector or ticker prefix
@@ -580,7 +588,8 @@ def cmd_regime(args=""):
     try:
         regime_file = Path("logs/market_regime.json")
         if regime_file.exists():
-            data = json.load(open(regime_file))
+            with open(regime_file) as _rf:
+                data = json.load(_rf)
             if isinstance(data, list) and data:
                 latest = data[-1]
                 return "Market Regime: %s\nConfidence: %d%%\nScore: %d\nUpdated: %s" % (
@@ -667,7 +676,7 @@ def cmd_dca(args=""):
         import dca_advisor
         ticker = args.strip().upper() if args.strip() else None
         if ticker:
-            portfolio = json.load(open("portfolio.json"))
+            portfolio = _load_portfolio()
             holdings = [h for h in portfolio.get("holdings", []) if h["ticker"] == ticker]
             if not holdings:
                 return "%s not in your portfolio." % ticker
@@ -686,7 +695,7 @@ def cmd_tax(args=""):
     """Tax loss harvesting opportunities."""
     try:
         import tax_harvesting
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         analysis = tax_harvesting.analyze_harvesting(portfolio)
         return tax_harvesting.format_report(analysis)
     except Exception as e:
@@ -699,7 +708,7 @@ def cmd_rotation(args=""):
         import sector_rotation
         perf = sector_rotation.fetch_sector_performance()
         rotation = sector_rotation.detect_rotation(perf)
-        portfolio = json.load(open("portfolio.json"))
+        portfolio = _load_portfolio()
         exposure = sector_rotation.get_portfolio_exposure(rotation, portfolio)
         return sector_rotation.format_report(perf, rotation, exposure)
     except Exception as e:
@@ -944,20 +953,20 @@ def cmd_sold(args=""):
 
     avg_cost     = float(existing.get("avg_cost", price))
     held_shares  = float(existing.get("shares", 0))
-    sold_shares  = min(shares, int(held_shares))
+    sold_shares  = min(float(shares), held_shares)
     realized_pnl = round((price - avg_cost) * sold_shares, 2)
     pnl_pct      = round((price - avg_cost) / avg_cost * 100, 2) if avg_cost else 0
     pnl_sign     = "+" if realized_pnl >= 0 else ""
 
     if sold_shares >= held_shares:
         holdings.remove(existing)
-        position_msg = f"Position closed: {ticker} (all {int(held_shares)} shares)"
+        position_msg = f"Position closed: {ticker} (all {held_shares:.4g} shares)"
     else:
-        remaining = int(held_shares - sold_shares)
-        existing["shares"]        = remaining
+        remaining = held_shares - sold_shares
+        existing["shares"]        = round(remaining, 4)
         existing["current_value"] = round(remaining * price, 2)
         existing["unrealized_pnl"] = round((price - avg_cost) * remaining, 2)
-        position_msg = f"Partial exit: {ticker} — {sold_shares} sold, {remaining} remaining"
+        position_msg = f"Partial exit: {ticker} — {sold_shares:.4g} sold, {remaining:.4g} remaining"
 
     # Record realized trade
     realized_trades = portfolio.get("realized_trades_ytd", [])
@@ -1257,6 +1266,9 @@ def run_bot():
         except Exception as e:
             consecutive_errors += 1
             logger.error("Bot loop error: %s", e)
+            if consecutive_errors >= 25:
+                logger.critical("Bot hit %d consecutive errors — exiting for GitHub Actions restart", consecutive_errors)
+                sys.exit(1)
             import random
             wait = min(5 * consecutive_errors + random.randint(0, 3), 45)
             logger.info("Retrying in %d seconds...", wait)

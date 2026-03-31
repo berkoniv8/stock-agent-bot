@@ -105,6 +105,10 @@ def is_market_hours() -> bool:
 # Module-level data cache for correlation checks within a scan cycle
 _data_cache = {}  # type: Dict[str, Any]
 
+# Cache EOD report text generated at 16:15 so 16:25 digest reuses it (no double-generation)
+_eod_report_cache = None
+_eod_report_cache_date = None
+
 
 def scan_ticker(ticker: str, sector: str = "Technology", paper_mode: bool = False) -> None:
     """Run the full analysis pipeline for a single ticker."""
@@ -340,10 +344,17 @@ def _send_daily_briefing() -> None:
 
 def _send_eod_report() -> None:
     """Generate and send end-of-day report (Telegram only; email is in the digest)."""
+    global _eod_report_cache, _eod_report_cache_date
     try:
         report = eod_report.generate_report()
         eod_report.save_report(report)
         eod_report.send_report(report)
+        # Cache formatted text so _send_daily_digest() reuses it instead of regenerating
+        try:
+            _eod_report_cache = eod_report.format_report(report)
+            _eod_report_cache_date = datetime.now().date()
+        except Exception:
+            pass
         logger.info("EOD report generated and sent")
     except Exception as e:
         logger.error("Failed to generate EOD report: %s", e)
@@ -351,14 +362,22 @@ def _send_eod_report() -> None:
 
 def _send_daily_digest() -> None:
     """Send the ONE daily email — all trade alerts + briefing + EOD report combined."""
+    global _eod_report_cache, _eod_report_cache_date
     try:
         eod_text = None
-        try:
-            report = eod_report.generate_report()
-            eod_report.save_report(report)
-            eod_text = eod_report.format_report(report)
-        except Exception as e:
-            logger.debug("EOD report for digest failed: %s", e)
+        today = datetime.now().date()
+        if _eod_report_cache and _eod_report_cache_date == today:
+            # Reuse the report already generated at 16:15 — no double API call
+            eod_text = _eod_report_cache
+            logger.debug("Using cached EOD report for daily digest")
+        else:
+            # Cache miss (e.g. bot restarted between 16:15 and 16:25) — generate fresh
+            try:
+                report = eod_report.generate_report()
+                eod_report.save_report(report)
+                eod_text = eod_report.format_report(report)
+            except Exception as e:
+                logger.debug("EOD report for digest failed: %s", e)
         notifications.send_daily_digest(eod_text=eod_text)
         logger.info("Daily digest email sent")
     except Exception as e:
@@ -451,7 +470,11 @@ def _check_sector_rotation() -> None:
         rotation = sector_rotation.detect_rotation(perf)
         if rotation.get("rotating_into") or rotation.get("rotating_out_of"):
             import json
-            portfolio = json.load(open("portfolio.json")) if os.path.exists("portfolio.json") else {}
+            if os.path.exists("portfolio.json"):
+                with open("portfolio.json") as _pf:
+                    portfolio = json.load(_pf)
+            else:
+                portfolio = {}
             exposure = sector_rotation.get_portfolio_exposure(rotation, portfolio)
             if exposure.get("misaligned"):
                 logger.info("Sector rotation detected: into %s, out of %s",

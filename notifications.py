@@ -9,6 +9,7 @@ import logging
 import os
 import smtplib
 import threading
+import time
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -53,7 +54,8 @@ def queue_alert_for_digest(alert: TradeAlert, plan: PositionPlan, graded_text: s
 def set_briefing_for_digest(text: str) -> None:
     """Store the morning briefing text so it appears in the digest email."""
     global _queued_briefing
-    _queued_briefing = text
+    with _queue_lock:
+        _queued_briefing = text
 
 
 def _build_digest_html(alerts, briefing_text, eod_text, today_str):
@@ -160,11 +162,10 @@ def send_daily_digest(eod_text: str = None) -> bool:
     with _queue_lock:
         alerts  = list(_daily_alert_queue)
         reports = list(_queued_reports)
+        briefing_snap = _queued_briefing
         _daily_alert_queue.clear()
         _queued_reports.clear()
-
-    briefing_snap   = _queued_briefing
-    _queued_briefing = None
+        _queued_briefing = None
 
     today_str = datetime.now().strftime("%A, %B %d, %Y")
     buy_count  = sum(1 for a in alerts if a["alert"].direction == "BUY")
@@ -202,20 +203,28 @@ def send_daily_digest(eod_text: str = None) -> bool:
     # Inject reports section into HTML
     full_html = html.replace("</body>", reports_html + "</body>")
 
+    _digest_sending = True
     try:
-        _digest_sending = True
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = user
         msg["To"]      = to_addr
         msg.attach(MIMEText(plain, "plain"))
         msg.attach(MIMEText(full_html, "html"))
-        with smtplib.SMTP(host, port) as server:
-            server.starttls()
-            server.login(user, password)
-            server.sendmail(user, [to_addr], msg.as_string())
-        logger.info("Daily digest sent: %d alerts, %d reports", len(alerts), len(reports))
-        return True
+        for attempt in range(3):
+            try:
+                with smtplib.SMTP(host, port) as server:
+                    server.starttls()
+                    server.login(user, password)
+                    server.sendmail(user, [to_addr], msg.as_string())
+                logger.info("Daily digest sent: %d alerts, %d reports", len(alerts), len(reports))
+                return True
+            except (smtplib.SMTPException, OSError) as smtp_err:
+                logger.warning("Digest SMTP attempt %d/3 failed: %s", attempt + 1, smtp_err)
+                if attempt < 2:
+                    time.sleep(5)
+        logger.error("Daily digest failed after 3 SMTP attempts")
+        return False
     except Exception as e:
         logger.error("Daily digest send failed: %s", e)
         return False
