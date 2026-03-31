@@ -33,7 +33,9 @@ DASHBOARD_LOG = LOGS_DIR / "dashboard.csv"
 
 _queue_lock = threading.Lock()
 _daily_alert_queue = []   # list of {"alert", "plan", "graded_text", "ts"}
-_queued_briefing = None   # morning briefing plain text
+_queued_briefing  = None  # morning briefing plain text
+_queued_reports   = []    # list of {"subject", "text", "html"} — all non-alert emails
+_digest_sending   = False # True while send_daily_digest() is actually transmitting
 
 
 def queue_alert_for_digest(alert: TradeAlert, plan: PositionPlan, graded_text: str = None) -> None:
@@ -143,7 +145,7 @@ h1{{background:linear-gradient(135deg,#0d47a1,#1565c0);color:white;padding:20px;
 
 def send_daily_digest(eod_text: str = None) -> bool:
     """Build and send the ONE daily email with all alerts, briefing, and EOD report."""
-    global _queued_briefing
+    global _queued_briefing, _digest_sending
 
     host     = os.getenv("SMTP_HOST", "")
     port     = int(os.getenv("SMTP_PORT", "587"))
@@ -156,8 +158,10 @@ def send_daily_digest(eod_text: str = None) -> bool:
         return False
 
     with _queue_lock:
-        alerts = list(_daily_alert_queue)
+        alerts  = list(_daily_alert_queue)
+        reports = list(_queued_reports)
         _daily_alert_queue.clear()
+        _queued_reports.clear()
 
     briefing_snap   = _queued_briefing
     _queued_briefing = None
@@ -169,34 +173,54 @@ def send_daily_digest(eod_text: str = None) -> bool:
 
     html = _build_digest_html(alerts, briefing_snap, eod_text, today_str)
 
+    # Build reports section (sell alerts, news, earnings, etc. queued during the day)
+    reports_html = ""
+    reports_text = ""
+    if reports:
+        reports_text = "\n\nOTHER ALERTS (%d)\n%s\n" % (len(reports), "-" * 30)
+        for r in reports:
+            reports_text += "\n[%s]\n%s\n" % (r["subject"], r["text"][:800])
+        reports_html = "<h2 style='color:#37474f;border-bottom:2px solid #37474f;padding-bottom:6px;'>Other Alerts (%d)</h2>" % len(reports)
+        for r in reports:
+            rhtml = r.get("html") or ("<pre style='white-space:pre-wrap;font-size:12px;'>%s</pre>" % r["text"][:1000])
+            reports_html += "<details style='margin:8px 0;border:1px solid #ddd;border-radius:6px;'><summary style='padding:10px;cursor:pointer;background:#f5f5f5;'><strong>%s</strong></summary><div style='padding:12px;'>%s</div></details>" % (r["subject"], rhtml)
+
     # Plain-text fallback
-    lines = [f"DAILY DIGEST — {today_str}", "=" * 50, ""]
+    lines = ["DAILY DIGEST — %s" % today_str, "=" * 50, ""]
     if briefing_snap:
         lines += ["MORNING BRIEFING", "-" * 30, briefing_snap[:1500], ""]
     lines += ["TRADE SIGNALS (%d total)" % len(alerts), "-" * 30]
     for item in alerts:
         a, p = item["alert"], item["plan"]
-        lines.append(f"{a.direction} {a.ticker}  score:{a.signal_score}  entry:${p.entry_price:,.2f}  stop:${p.stop_loss:,.2f}  T1:${p.target_1:,.2f}")
+        lines.append("%s %s  score:%d  entry:$%.2f  stop:$%.2f  T1:$%.2f" % (
+            a.direction, a.ticker, a.signal_score, p.entry_price, p.stop_loss, p.target_1))
     if eod_text:
         lines += ["", "END-OF-DAY REPORT", "-" * 30, eod_text[:1500]]
-    text = "\n".join(lines)
+    lines.append(reports_text)
+    plain = "\n".join(lines)
+
+    # Inject reports section into HTML
+    full_html = html.replace("</body>", reports_html + "</body>")
 
     try:
+        _digest_sending = True
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = user
         msg["To"]      = to_addr
-        msg.attach(MIMEText(text, "plain"))
-        msg.attach(MIMEText(html, "html"))
+        msg.attach(MIMEText(plain, "plain"))
+        msg.attach(MIMEText(full_html, "html"))
         with smtplib.SMTP(host, port) as server:
             server.starttls()
             server.login(user, password)
             server.sendmail(user, [to_addr], msg.as_string())
-        logger.info("Daily digest sent: %d alerts (%d BUY, %d SELL)", len(alerts), buy_count, sell_count)
+        logger.info("Daily digest sent: %d alerts, %d reports", len(alerts), len(reports))
         return True
     except Exception as e:
         logger.error("Daily digest send failed: %s", e)
         return False
+    finally:
+        _digest_sending = False
 
 
 # ---------------------------------------------------------------------------
@@ -495,22 +519,46 @@ def send_sms_text(text: str, subject: str = "Stock Agent") -> bool:
 
 
 def send_email_text(text: str, subject: str = "Stock Agent", html: str = None) -> bool:
-    """Send a plain text/HTML email (for sell alerts, briefings, etc.)."""
-    host = os.getenv("SMTP_HOST", "")
-    user = os.getenv("SMTP_USER", "")
+    """
+    Queue content for the daily digest instead of sending immediately.
+
+    All modules (briefings, sell alerts, news, earnings, sector rotation,
+    upgrades, volume spikes, weekly report) call this. By routing everything
+    through the queue, the user receives ONE consolidated email per day at
+    4:25 PM instead of 20+ individual emails.
+
+    The only exception is when called from inside send_daily_digest() itself
+    (flagged by _digest_sending=True), which does the actual SMTP send.
+    """
+    global _digest_sending
+
+    if _digest_sending:
+        # We are inside send_daily_digest() — actually transmit this one email
+        return _smtp_send_raw(text, subject, html)
+
+    # Otherwise: queue for the end-of-day digest
+    with _queue_lock:
+        _queued_reports.append({"subject": subject, "text": text, "html": html})
+    logger.debug("Email queued for digest: %s", subject)
+    return True
+
+
+def _smtp_send_raw(text: str, subject: str, html: str = None) -> bool:
+    """Internal: actually send an email via SMTP (only called from send_daily_digest)."""
+    host     = os.getenv("SMTP_HOST", "")
+    port     = int(os.getenv("SMTP_PORT", "587"))
+    user     = os.getenv("SMTP_USER", "")
     password = os.getenv("SMTP_PASSWORD", "")
-    to_addr = os.getenv("ALERT_EMAIL_TO", "")
+    to_addr  = os.getenv("ALERT_EMAIL_TO", "")
 
     if not all([host, user, password, to_addr]) or user.startswith("your_") or password.startswith("your_"):
         return False
 
     try:
-        port = int(os.getenv("SMTP_PORT", "587"))
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = user
-        msg["To"] = to_addr
-
+        msg["From"]    = user
+        msg["To"]      = to_addr
         msg.attach(MIMEText(text, "plain"))
         if html:
             msg.attach(MIMEText(html, "html"))

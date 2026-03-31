@@ -324,14 +324,15 @@ def run_scan(paper_mode: bool = False) -> None:
 
 
 def _send_daily_briefing() -> None:
-    """Generate morning briefing, send to Telegram, and queue text for EOD digest."""
+    """Generate morning briefing — Telegram only; email goes in the 4:25 PM digest."""
     try:
         briefing = daily_briefing.generate_briefing()
         text = daily_briefing.format_briefing(briefing)
         logger.info("Daily briefing generated")
-        # Send to Telegram for real-time delivery
+        # Telegram: real-time delivery (send_briefing sends to Slack/Discord/Telegram only,
+        # its internal email code is suppressed because send_email_text now queues)
         daily_briefing.send_briefing(text)
-        # Store text so it appears in the single daily email digest
+        # Queue for the daily digest email
         notifications.set_briefing_for_digest(text)
     except Exception as e:
         logger.error("Failed to send daily briefing: %s", e)

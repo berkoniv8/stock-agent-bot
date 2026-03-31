@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330  # 5.5 hours max per job
 
+    permissions:
+      contents: write   # Required to commit portfolio.json trade updates back to repo
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,26 +49,26 @@ jobs:
 
       - name: Write .env from secrets
         run: |
-          cat > .env << 'ENVEOF'
-          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-          SMTP_HOST=${{ secrets.SMTP_HOST }}
-          SMTP_PORT=${{ secrets.SMTP_PORT }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
-          ALERT_EMAIL_TO=${{ secrets.ALERT_EMAIL_TO }}
-          SMS_GATEWAY=${{ secrets.SMS_GATEWAY }}
-          IB_FLEX_TOKEN=${{ secrets.IB_FLEX_TOKEN }}
-          IB_FLEX_QUERY_ID=${{ secrets.IB_FLEX_QUERY_ID }}
-          TIMEZONE=America/New_York
-          USE_SQLITE=1
-          BRIEFING_AUTO_SEND=1
-          SIGNAL_THRESHOLD=5
-          RUN_INTERVAL_MINUTES=15
-          TOTAL_PORTFOLIO_VALUE=129192
-          MAX_RISK_PER_TRADE_PCT=1.0
-          MAX_POSITION_SIZE_PCT=10.0
-          ENVEOF
+          cat > .env <<ENVEOF
+TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+SMTP_HOST=${{ secrets.SMTP_HOST }}
+SMTP_PORT=${{ secrets.SMTP_PORT }}
+SMTP_USER=${{ secrets.SMTP_USER }}
+SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+ALERT_EMAIL_TO=${{ secrets.ALERT_EMAIL_TO }}
+SMS_GATEWAY=${{ secrets.SMS_GATEWAY }}
+IB_FLEX_TOKEN=${{ secrets.IB_FLEX_TOKEN }}
+IB_FLEX_QUERY_ID=${{ secrets.IB_FLEX_QUERY_ID }}
+TIMEZONE=America/New_York
+USE_SQLITE=1
+BRIEFING_AUTO_SEND=1
+SIGNAL_THRESHOLD=5
+RUN_INTERVAL_MINUTES=15
+TOTAL_PORTFOLIO_VALUE=129192
+MAX_RISK_PER_TRADE_PCT=1.0
+MAX_POSITION_SIZE_PCT=10.0
+ENVEOF
 
       - name: Run Telegram bot + scheduler (5.5 hours)
         run: |
