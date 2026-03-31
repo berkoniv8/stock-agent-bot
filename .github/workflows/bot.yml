@@ -38,55 +38,66 @@ jobs:
 
       - name: Write portfolio.json from secret (only if repo copy is absent/empty)
         run: |
-          # If the repo already has a committed portfolio.json (from /bought or /sold),
-          # use that. Otherwise fall back to the secret (initial setup).
           if [ ! -s portfolio.json ]; then
             echo '${{ secrets.PORTFOLIO_JSON }}' > portfolio.json
-            echo "Wrote portfolio.json from secret (no committed copy found)"
+            echo "Wrote portfolio.json from secret"
           else
             echo "Using committed portfolio.json from repo"
           fi
 
       - name: Write .env from secrets
         run: |
-          cat > .env <<ENVEOF
-TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-SMTP_HOST=${{ secrets.SMTP_HOST }}
-SMTP_PORT=${{ secrets.SMTP_PORT }}
-SMTP_USER=${{ secrets.SMTP_USER }}
-SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
-ALERT_EMAIL_TO=${{ secrets.ALERT_EMAIL_TO }}
-SMS_GATEWAY=${{ secrets.SMS_GATEWAY }}
-IB_FLEX_TOKEN=${{ secrets.IB_FLEX_TOKEN }}
-IB_FLEX_QUERY_ID=${{ secrets.IB_FLEX_QUERY_ID }}
-TIMEZONE=America/New_York
-USE_SQLITE=1
-BRIEFING_AUTO_SEND=1
-SIGNAL_THRESHOLD=5
-RUN_INTERVAL_MINUTES=15
-TOTAL_PORTFOLIO_VALUE=129192
-MAX_RISK_PER_TRADE_PCT=1.0
-MAX_POSITION_SIZE_PCT=10.0
-ENVEOF
+          python3 - <<'PYEOF'
+          import os
+          lines = [
+            "TELEGRAM_BOT_TOKEN=" + os.environ.get("S_TELEGRAM_BOT_TOKEN", ""),
+            "TELEGRAM_CHAT_ID=" + os.environ.get("S_TELEGRAM_CHAT_ID", ""),
+            "SMTP_HOST=" + os.environ.get("S_SMTP_HOST", ""),
+            "SMTP_PORT=" + os.environ.get("S_SMTP_PORT", "587"),
+            "SMTP_USER=" + os.environ.get("S_SMTP_USER", ""),
+            "SMTP_PASSWORD=" + os.environ.get("S_SMTP_PASSWORD", ""),
+            "ALERT_EMAIL_TO=" + os.environ.get("S_ALERT_EMAIL_TO", ""),
+            "SMS_GATEWAY=" + os.environ.get("S_SMS_GATEWAY", ""),
+            "IB_FLEX_TOKEN=" + os.environ.get("S_IB_FLEX_TOKEN", ""),
+            "IB_FLEX_QUERY_ID=" + os.environ.get("S_IB_FLEX_QUERY_ID", ""),
+            "TIMEZONE=America/New_York",
+            "USE_SQLITE=1",
+            "BRIEFING_AUTO_SEND=1",
+            "SIGNAL_THRESHOLD=5",
+            "RUN_INTERVAL_MINUTES=15",
+            "TOTAL_PORTFOLIO_VALUE=129192",
+            "MAX_RISK_PER_TRADE_PCT=1.0",
+            "MAX_POSITION_SIZE_PCT=10.0",
+          ]
+          with open(".env", "w") as f:
+            f.write("\n".join(lines) + "\n")
+          print("Wrote .env (%d vars)" % len(lines))
+          PYEOF
+        env:
+          S_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          S_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          S_SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          S_SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          S_SMTP_USER: ${{ secrets.SMTP_USER }}
+          S_SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          S_ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          S_SMS_GATEWAY: ${{ secrets.SMS_GATEWAY }}
+          S_IB_FLEX_TOKEN: ${{ secrets.IB_FLEX_TOKEN }}
+          S_IB_FLEX_QUERY_ID: ${{ secrets.IB_FLEX_QUERY_ID }}
 
       - name: Run Telegram bot + scheduler (5.5 hours)
         run: |
-          # Start scheduler in background
           python3 agent.py --schedule --skip-checks > logs/scheduler.log 2>&1 &
           SCHED_PID=$!
           echo "Scheduler started (PID $SCHED_PID)"
 
-          # Start Telegram bot in background
           python3 telegram_bot.py > logs/bot.log 2>&1 &
           BOT_PID=$!
           echo "Telegram bot started (PID $BOT_PID)"
 
-          # Wait 5.5 hours (19800 seconds), then let workflow end + auto-restart
           echo "Running until $(date -d '+5.5 hours' 2>/dev/null || date -v+330M)"
           sleep 19800
 
-          # Graceful shutdown
           kill $SCHED_PID $BOT_PID 2>/dev/null || true
         env:
           PYTHONUNBUFFERED: "1"
