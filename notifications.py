@@ -741,7 +741,7 @@ def notify(alert: TradeAlert, plan: PositionPlan) -> None:
     queue_alert_for_digest(alert, plan, graded_text)
 
     # Send through other configured channels (standard format — no email, handled by digest)
-    send_sms(alert, plan)
+    # SMS disabled — email-to-SMS gateway is unreliable and causes bounce spam
     send_slack(alert, plan)
     send_discord(alert, plan)
     send_webhook(alert, plan)

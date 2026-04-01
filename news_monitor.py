@@ -256,11 +256,7 @@ def send_news_alerts(items: List[dict]) -> None:
     if email_sent:
         logger.info("News email sent: %s items", len(new_items))
 
-    # SMS: significant items only, max 3, compact format
-    significant = filter_significant(new_items)[:3]
-    for item in significant:
-        sms_text = f"{item['ticker']}: {item['title'][:120]}"
-        notifications.send_sms_text(sms_text, subject=f"News: {item['ticker']}")
+    # SMS disabled — news alerts go via Telegram and daily digest email
 
     # Telegram
     try:

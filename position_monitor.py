@@ -295,11 +295,7 @@ def send_sell_alerts(results: List[dict]) -> None:
     # Email full report
     notifications.send_email_text(report, subject=subject)
 
-    # SMS only for SELL and TRIM (urgent)
-    urgent = [r for r in actionable if r["action"] in ("SELL", "TRIM")]
-    if urgent:
-        sms_text = "\n".join(format_sms_alert(r) for r in urgent[:3])  # Max 3 in SMS
-        notifications.send_sms_text(sms_text, subject="SELL ALERT")
+    # SMS disabled — use Telegram for urgent alerts instead
 
     # Telegram
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")

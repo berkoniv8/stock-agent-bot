@@ -280,7 +280,7 @@ def send_earnings_alert(warnings: List[dict]) -> None:
     sms_text = " | ".join(sms_lines)
 
     notifications.send_email_text(report, subject=subject)
-    notifications.send_sms_text(sms_text[:160], subject=subject)
+    # SMS disabled — email queued for daily digest instead
 
     # Telegram
     try:
