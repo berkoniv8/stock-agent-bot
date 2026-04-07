@@ -421,13 +421,40 @@ def _run_health_check() -> None:
         logger.error("Health check crashed: %s", e)
 
 
+def _commit_portfolio_to_github() -> None:
+    """Commit current portfolio.json to GitHub so prices persist across restarts."""
+    import base64
+    import json as _json
+    import requests as _requests
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo = os.getenv("GITHUB_REPOSITORY", "")
+    if not token or not repo:
+        return
+    try:
+        with open("portfolio.json") as f:
+            content = f.read()
+        encoded = base64.b64encode(content.encode()).decode()
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        url = f"https://api.github.com/repos/{repo}/contents/portfolio.json"
+        resp = _requests.get(url, headers=headers, timeout=10)
+        sha = resp.json().get("sha", "") if resp.status_code == 200 else ""
+        payload = {"message": "bot: refresh prices", "content": encoded, "branch": "main"}
+        if sha:
+            payload["sha"] = sha
+        _requests.put(url, json=payload, headers=headers, timeout=10)
+        logger.info("Portfolio prices committed to GitHub")
+    except Exception as e:
+        logger.debug("Portfolio GitHub commit failed: %s", e)
+
+
 def _refresh_portfolio_prices() -> None:
-    """Refresh portfolio.json with live prices from yfinance."""
+    """Refresh portfolio.json with live prices from yfinance and commit to GitHub."""
     if not is_market_hours():
         return
     try:
         import risk_monitor
         risk_monitor.analyze_risk(update_prices=True)
+        _commit_portfolio_to_github()
         logger.info("Portfolio prices refreshed")
     except Exception as e:
         logger.debug("Portfolio price refresh failed: %s", e)

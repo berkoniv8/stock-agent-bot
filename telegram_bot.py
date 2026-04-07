@@ -37,7 +37,9 @@ import base64
 import json
 import logging
 import os
+import queue as _queue
 import sys
+import threading
 import time
 import traceback
 from datetime import datetime
@@ -1192,6 +1194,28 @@ def _save_offset(offset: int) -> None:
         pass
 
 
+# ---------------------------------------------------------------------------
+# Message processing queue — processes one message at a time in a background
+# thread so the polling loop stays free to receive the next message immediately.
+# ---------------------------------------------------------------------------
+
+_msg_queue: _queue.Queue = _queue.Queue()
+
+
+def _message_worker() -> None:
+    """Background thread: dequeue and handle messages one at a time."""
+    while True:
+        text, chat_id = _msg_queue.get()
+        try:
+            response = handle_message(text, chat_id)
+            send_message(response, chat_id=chat_id)
+        except Exception as e:
+            send_message("Error: %s" % str(e)[:200], chat_id=chat_id)
+            logger.error("Handler error: %s", traceback.format_exc())
+        finally:
+            _msg_queue.task_done()
+
+
 def run_bot():
     """Main bot loop — long polls for messages."""
     if not TOKEN:
@@ -1207,6 +1231,10 @@ def run_bot():
 
     print("Stock Agent Telegram Bot starting...")
     print("Listening for commands...")
+
+    # Start background message-processing thread
+    worker = threading.Thread(target=_message_worker, daemon=True)
+    worker.start()
 
     # Restore offset so we don't replay old messages after a restart
     offset = _load_offset()
@@ -1242,12 +1270,10 @@ def run_bot():
 
                 logger.info("Received: %s", text)
 
-                try:
-                    response = handle_message(text, chat_id)
-                    send_message(response, chat_id=chat_id)
-                except Exception as e:
-                    send_message("Error: %s" % str(e)[:200], chat_id=chat_id)
-                    logger.error("Handler error: %s", traceback.format_exc())
+                # Send immediate acknowledgment so user knows bot is alive,
+                # then dispatch to background worker to avoid blocking polling.
+                send_message("⏳", chat_id=chat_id)
+                _msg_queue.put((text, chat_id))
 
         except KeyboardInterrupt:
             print("\nBot stopped.")

@@ -12,12 +12,15 @@ Usage:
 """
 
 import argparse
+import base64
 import json
 import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Set
+
+import requests
 
 import yfinance as yf
 from dotenv import load_dotenv
@@ -43,8 +46,56 @@ SIGNIFICANT_KEYWORDS = [
 # Cache helpers
 # ---------------------------------------------------------------------------
 
+_GITHUB_CACHE_PATH = "logs/news_sent.json"
+
+
+def _commit_news_cache_to_github(cache: Set[str]) -> None:
+    """Persist news cache to GitHub so it survives bot restarts."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo = os.getenv("GITHUB_REPOSITORY", "")
+    if not token or not repo:
+        return
+    try:
+        content = json.dumps(sorted(cache), indent=2)
+        encoded = base64.b64encode(content.encode()).decode()
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        url = f"https://api.github.com/repos/{repo}/contents/{_GITHUB_CACHE_PATH}"
+        resp = requests.get(url, headers=headers, timeout=10)
+        sha = resp.json().get("sha", "") if resp.status_code == 200 else ""
+        payload = {"message": "bot: update news cache", "content": encoded, "branch": "main"}
+        if sha:
+            payload["sha"] = sha
+        requests.put(url, json=payload, headers=headers, timeout=10)
+    except Exception as e:
+        logger.debug("News cache GitHub commit failed: %s", e)
+
+
+def _load_news_cache_from_github() -> Set[str]:
+    """Load news cache from GitHub (survives restarts); falls back to local file."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo = os.getenv("GITHUB_REPOSITORY", "")
+    if token and repo:
+        try:
+            headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+            url = f"https://api.github.com/repos/{repo}/contents/{_GITHUB_CACHE_PATH}"
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                content = base64.b64decode(resp.json()["content"]).decode()
+                data = json.loads(content)
+                if isinstance(data, list):
+                    return set(data)
+        except Exception as e:
+            logger.debug("Could not load news cache from GitHub: %s", e)
+    return set()
+
+
 def load_sent_cache() -> Set[str]:
-    """Load set of already-sent article URLs from logs/news_sent.json."""
+    """Load set of already-sent article URLs — from GitHub first, then local file."""
+    # Try GitHub first (persists across restarts)
+    remote = _load_news_cache_from_github()
+    if remote:
+        return remote
+    # Fall back to local file
     if not NEWS_CACHE_FILE.exists():
         return set()
     try:
@@ -59,12 +110,13 @@ def load_sent_cache() -> Set[str]:
 
 
 def save_sent_cache(cache: Set[str]) -> None:
-    """Persist sent article URL cache to logs/news_sent.json."""
+    """Persist sent article URL cache locally and to GitHub."""
     try:
         with open(NEWS_CACHE_FILE, "w") as f:
             json.dump(sorted(cache), f, indent=2)
     except Exception as e:
         logger.warning("Could not save news cache: %s", e)
+    _commit_news_cache_to_github(cache)
 
 
 # ---------------------------------------------------------------------------
