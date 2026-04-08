@@ -38,6 +38,48 @@ _queued_briefing  = None  # morning briefing plain text
 _queued_reports   = []    # list of {"subject", "text", "html"} — all non-alert emails
 _digest_sending   = False # True while send_daily_digest() is actually transmitting
 
+# ---------------------------------------------------------------------------
+# Telegram batching — collects alerts during a scan, sends ONE message at end
+# ---------------------------------------------------------------------------
+
+_telegram_batch_lock = threading.Lock()
+_telegram_batch = []  # list of text strings to send as a single message
+
+
+def queue_telegram(text: str) -> None:
+    """Queue a Telegram message for batched delivery instead of sending immediately."""
+    with _telegram_batch_lock:
+        _telegram_batch.append(text)
+
+
+def flush_telegram_batch() -> bool:
+    """Send all queued Telegram messages as one consolidated message."""
+    with _telegram_batch_lock:
+        if not _telegram_batch:
+            return False
+        messages = list(_telegram_batch)
+        _telegram_batch.clear()
+
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id or token.startswith("your_"):
+        return False
+
+    combined = "\n\n---\n\n".join(messages)
+    # Telegram max message length is 4096 chars
+    if len(combined) > 4000:
+        combined = combined[:3950] + "\n\n... (truncated)"
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        resp = requests.post(url, json={"chat_id": chat_id, "text": combined}, timeout=15)
+        resp.raise_for_status()
+        logger.info("Telegram batch sent: %d alerts in 1 message", len(messages))
+        return True
+    except Exception as e:
+        logger.error("Telegram batch send failed: %s", e)
+        return False
+
 
 def queue_alert_for_digest(alert: TradeAlert, plan: PositionPlan, graded_text: str = None) -> None:
     """Queue a trade alert so it ends up in the end-of-day digest instead of a separate email."""
@@ -726,16 +768,8 @@ def notify(alert: TradeAlert, plan: PositionPlan) -> None:
     else:
         print(format_alert_text(alert, plan))
 
-    # Send graded alert via Telegram (richer format)
-    if graded_text:
-        try:
-            import telegram_bot
-            telegram_bot.send_message(graded_text)
-        except Exception as e:
-            logger.debug("Telegram graded alert failed: %s", e)
-            send_telegram(alert, plan)
-    else:
-        send_telegram(alert, plan)
+    # Queue for batched Telegram delivery (one message per scan, not per alert)
+    queue_telegram(graded_text if graded_text else format_alert_text(alert, plan))
 
     # Queue alert for end-of-day digest instead of sending an individual email
     queue_alert_for_digest(alert, plan, graded_text)

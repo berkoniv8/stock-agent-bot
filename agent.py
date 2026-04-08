@@ -324,6 +324,12 @@ def run_scan(paper_mode: bool = False) -> None:
     except Exception as e:
         logger.debug("Position monitor failed: %s", e)
 
+    # Flush all queued Telegram alerts as ONE consolidated message
+    try:
+        notifications.flush_telegram_batch()
+    except Exception as e:
+        logger.debug("Telegram batch flush failed: %s", e)
+
     logger.info("Scan complete.\n")
 
 
@@ -469,6 +475,8 @@ def _check_portfolio_news() -> None:
         if significant:
             logger.info("Portfolio news: %d significant items found", len(significant))
             news_monitor.send_news_alerts(significant)
+            # Flush news alerts to Telegram immediately (not part of scan batch)
+            notifications.flush_telegram_batch()
         else:
             logger.debug("Portfolio news: nothing significant")
     except Exception as e:

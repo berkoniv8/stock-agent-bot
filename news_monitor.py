@@ -310,13 +310,12 @@ def send_news_alerts(items: List[dict]) -> None:
 
     # SMS disabled — news alerts go via Telegram and daily digest email
 
-    # Telegram
+    # Telegram — queue for batch delivery instead of sending individually
     try:
-        import telegram_bot
-        telegram_bot.send_message(report_text)
-        logger.info("News alert sent to Telegram")
+        notifications.queue_telegram(report_text)
+        logger.info("News alert queued for Telegram batch")
     except Exception as e:
-        logger.debug("Telegram news alert failed: %s", e)
+        logger.debug("Telegram news alert queue failed: %s", e)
 
     # Update cache with all items we just processed
     for item in new_items:

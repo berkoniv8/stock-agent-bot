@@ -297,19 +297,11 @@ def send_sell_alerts(results: List[dict]) -> None:
 
     # SMS disabled — use Telegram for urgent alerts instead
 
-    # Telegram
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
-    if token and chat_id and not token.startswith("your_"):
-        try:
-            import requests as req
-            url = "https://api.telegram.org/bot%s/sendMessage" % token
-            req.post(url, json={
-                "chat_id": chat_id,
-                "text": report,
-            }, timeout=10)
-        except Exception as e:
-            logger.debug("Telegram sell alert failed: %s", e)
+    # Queue for batched Telegram delivery (sent at end of scan)
+    try:
+        notifications.queue_telegram(report)
+    except Exception as e:
+        logger.debug("Telegram sell alert queue failed: %s", e)
 
 
 def main():
