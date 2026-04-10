@@ -541,12 +541,16 @@ def _flex_sync_trades() -> None:
     try:
         import ib_flex
         if not ib_flex.is_configured():
+            logger.info("IB Flex: skipped (IB_FLEX_TOKEN / IB_FLEX_QUERY_ID not set)")
             return
         new_trades = ib_flex.sync_new_trades(notify=True)
         if new_trades:
             logger.info("IB Flex: %d new trade(s) auto-synced", len(new_trades))
+        else:
+            logger.info("IB Flex: check complete — no new trades")
     except Exception as e:
-        logger.debug("IB Flex sync failed: %s", e)
+        # Upgrade from debug → warning so failures are actually visible in logs
+        logger.warning("IB Flex sync failed: %s", e)
 
 
 def _send_weekly_report() -> None:

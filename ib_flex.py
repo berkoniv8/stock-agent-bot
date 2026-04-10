@@ -30,6 +30,7 @@ How it works:
       sends a Telegram message with investor-quality feedback
 """
 
+import base64
 import json
 import logging
 import os
@@ -49,6 +50,10 @@ FLEX_DOWNLOAD_URL = "https://gdcdyn.interactivebrokers.com/Universal/servlet/Fle
 
 SEEN_TRADES_FILE  = Path("logs/flex_seen_trades.json")
 PORTFOLIO_FILE    = Path("portfolio.json")
+
+# Path inside the repo where the seen-trades set is persisted to GitHub
+# so it survives the 5.5-hour workflow restarts.
+_GITHUB_SEEN_PATH = "logs/flex_seen_trades.json"
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +147,6 @@ def _parse_flex_trades(xml_data: str) -> list[dict]:
     trades = []
     try:
         root = ET.fromstring(xml_data)
-        today = date.today().isoformat()
 
         for trade in root.iter("Trade"):
             attrib = trade.attrib
@@ -171,9 +175,11 @@ def _parse_flex_trades(xml_data: str) -> list[dict]:
             if trade_date and len(trade_date) == 8:
                 trade_date = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:8]}"
 
-            # Only process today's trades — guard against Flex query returning extra days
-            if trade_date and trade_date != today:
-                continue
+            # IMPORTANT: do NOT filter by today's date here.
+            # The Flex query may return the previous business day (e.g. bot runs
+            # Tuesday but user traded Monday), or a multi-day range. Dropping
+            # based on date silently loses trades. Deduplication is handled by
+            # filter_new_trades() via persistent execution IDs.
 
             # Normalise action: handle "BUY", "SELL", "BOT", "SLD"
             if action in ("BOT", "B"):
@@ -206,11 +212,63 @@ def _parse_flex_trades(xml_data: str) -> list[dict]:
 # Seen-trades tracking (so we don't process the same execution twice)
 # ---------------------------------------------------------------------------
 
+def _load_seen_from_github() -> set:
+    """Load the seen-trades set from GitHub so it survives workflow restarts."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo  = os.getenv("GITHUB_REPOSITORY", "")
+    if not token or not repo:
+        return set()
+    try:
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        url     = f"https://api.github.com/repos/{repo}/contents/{_GITHUB_SEEN_PATH}"
+        resp    = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            content = base64.b64decode(resp.json()["content"]).decode()
+            data    = json.loads(content)
+            if isinstance(data, dict):
+                return set(data.get("seen", []))
+            if isinstance(data, list):
+                return set(data)
+    except Exception as e:
+        logger.debug("Could not load flex seen-trades from GitHub: %s", e)
+    return set()
+
+
+def _commit_seen_to_github(seen: set) -> None:
+    """Persist the seen-trades set to GitHub so future workflow runs see it."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    repo  = os.getenv("GITHUB_REPOSITORY", "")
+    if not token or not repo:
+        return
+    try:
+        trimmed = sorted(seen)[-1000:]  # cap growth
+        content = json.dumps({"seen": trimmed}, indent=2)
+        encoded = base64.b64encode(content.encode()).decode()
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        url     = f"https://api.github.com/repos/{repo}/contents/{_GITHUB_SEEN_PATH}"
+        resp    = requests.get(url, headers=headers, timeout=10)
+        sha     = resp.json().get("sha", "") if resp.status_code == 200 else ""
+        payload = {"message": "bot: update flex seen-trades", "content": encoded, "branch": "main"}
+        if sha:
+            payload["sha"] = sha
+        requests.put(url, json=payload, headers=headers, timeout=10)
+    except Exception as e:
+        logger.debug("Flex seen-trades GitHub commit failed: %s", e)
+
+
 def _load_seen() -> set:
+    # Prefer GitHub (persistent across 5.5-hour workflow restarts)
+    remote = _load_seen_from_github()
+    if remote:
+        return remote
+    # Fall back to local file (first run inside a fresh runner)
     try:
         if SEEN_TRADES_FILE.exists():
             data = json.loads(SEEN_TRADES_FILE.read_text())
-            return set(data.get("seen", []))
+            if isinstance(data, dict):
+                return set(data.get("seen", []))
+            if isinstance(data, list):
+                return set(data)
     except Exception:
         pass
     return set()
@@ -219,20 +277,44 @@ def _load_seen() -> set:
 def _save_seen(seen: set) -> None:
     try:
         SEEN_TRADES_FILE.parent.mkdir(exist_ok=True)
-        # Only keep last 500 IDs to prevent unbounded growth
-        trimmed = list(seen)[-500:]
+        trimmed = sorted(seen)[-1000:]
         SEEN_TRADES_FILE.write_text(json.dumps({"seen": trimmed}, indent=2))
     except Exception as e:
         logger.debug("Could not save seen trades: %s", e)
+    _commit_seen_to_github(seen)
+
+
+def _trade_uid(t: dict) -> str:
+    return t.get("exec_id") or f"{t['ticker']}-{t['action']}-{t['quantity']}-{t['price']}-{t['date_time']}"
 
 
 def filter_new_trades(trades: list[dict]) -> list[dict]:
-    """Return only trades not yet processed, and update the seen-set."""
+    """Return only trades not yet processed, and update the seen-set.
+
+    First-run guard: if there is no persisted seen-set (neither in GitHub nor
+    locally), mark everything we see as already-processed without emitting
+    notifications. This prevents a flood of historical trades the very first
+    time Flex is wired up, or if the seen file is ever accidentally deleted.
+    Users who genuinely want a fresh import can set FLEX_INITIAL_IMPORT=1.
+    """
     seen = _load_seen()
-    new  = []
+
+    if not seen and not os.getenv("FLEX_INITIAL_IMPORT"):
+        # Silent bootstrap: remember these trades as seen so only *future*
+        # executions trigger notifications / portfolio updates.
+        for t in trades:
+            t["_uid"] = _trade_uid(t)
+        bootstrap = {t["_uid"] for t in trades}
+        if bootstrap:
+            _save_seen(bootstrap)
+            logger.info("IB Flex: bootstrapped seen-trades set with %d existing trades "
+                        "(no changes made — future trades will be detected)",
+                        len(bootstrap))
+        return []
+
+    new = []
     for t in trades:
-        # Build a unique ID for each execution
-        uid = t.get("exec_id") or f"{t['ticker']}-{t['action']}-{t['quantity']}-{t['price']}-{t['date_time']}"
+        uid = _trade_uid(t)
         if uid not in seen:
             t["_uid"] = uid
             new.append(t)

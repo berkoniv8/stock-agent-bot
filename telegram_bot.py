@@ -876,7 +876,7 @@ def cmd_bought(args=""):
         )
     ticker = parts[0]
     try:
-        shares = int(parts[1])
+        shares = float(parts[1])
         price  = float(parts[2])
     except ValueError:
         return "Invalid format. Example: /bought TSLA 100 245.50"
@@ -891,14 +891,14 @@ def cmd_bought(args=""):
         old_cost   = float(existing.get("avg_cost", 0))
         new_shares = old_shares + shares
         new_avg    = (old_shares * old_cost + shares * price) / new_shares if new_shares else price
-        existing["shares"]        = int(new_shares)
+        existing["shares"]        = round(new_shares, 4)
         existing["avg_cost"]      = round(new_avg, 4)
         existing["current_price"] = price
         existing["cost_basis"]    = round(new_shares * new_avg, 2)
         existing["current_value"] = round(new_shares * price, 2)
         existing["unrealized_pnl"] = round((price - new_avg) * new_shares, 2)
         existing["pnl_pct"]       = round((price - new_avg) / new_avg * 100, 2) if new_avg else 0
-        msg = f"Added to existing {ticker} position. New: {int(new_shares)} shares @ avg ${new_avg:.2f}"
+        msg = f"Added to existing {ticker} position. New: {new_shares:g} shares @ avg ${new_avg:.2f}"
     else:
         holdings.append({
             "ticker":        ticker,
@@ -941,7 +941,7 @@ def cmd_sold(args=""):
         )
     ticker = parts[0]
     try:
-        shares = int(parts[1])
+        shares = float(parts[1])
         price  = float(parts[2])
     except ValueError:
         return "Invalid format. Example: /sold TSLA 50 260.00"
@@ -1053,16 +1053,54 @@ def cmd_sync(args=""):
                 "Once set, trades auto-detect every 15 min.\n"
                 "Use /sync to force an immediate check."
             )
-        send_message("Checking IB for new trades... (may take ~15s)")
-        new_trades = ib_flex.sync_new_trades(notify=False)
+        send_message("Checking IB for new trades... (may take ~15s)", chat_id=CHAT_ID)
+
+        # Fetch raw trades first so we can give meaningful diagnostics
+        all_trades = ib_flex.fetch_todays_trades()
+        if not all_trades:
+            return (
+                "Flex returned 0 trades.\n\n"
+                "Possible causes:\n"
+                "• Your Flex query date range doesn't cover recent trades\n"
+                "  (set it to 'Last 5 business days' or 'Month to Date')\n"
+                "• No trades have been executed in that window\n"
+                "• The Flex token or query ID is wrong\n"
+                "• The query doesn't include the 'Trades' section\n\n"
+                "Run /sync again after fixing the query in IB Account Management."
+            )
+
+        # First-run detection: if no seen-set exists yet, treat /sync as a
+        # deliberate full import of everything Flex is currently returning,
+        # rather than silently bootstrapping and producing "nothing new".
+        prior_seen = ib_flex._load_seen()
+        if not prior_seen:
+            os.environ["FLEX_INITIAL_IMPORT"] = "1"
+        try:
+            new_trades = ib_flex.filter_new_trades(all_trades)
+        finally:
+            os.environ.pop("FLEX_INITIAL_IMPORT", None)
+
         if not new_trades:
-            return "No new trades found since last sync."
+            return (
+                f"Flex returned {len(all_trades)} trade(s) — all already processed.\n\n"
+                "If you expected new ones to show up, your seen-set may be caching\n"
+                "them. To force a fresh import, clear logs/flex_seen_trades.json on\n"
+                "GitHub and run /sync again."
+            )
+
+        # Apply each new trade to portfolio
+        portfolio = ib_flex._load_portfolio()
+        for trade in new_trades:
+            portfolio = ib_flex.apply_trade_to_portfolio(trade, portfolio)
+            ib_flex._save_portfolio(portfolio)
+        ib_flex._commit_portfolio(portfolio)
+
         lines = ["Synced %d new trade(s):" % len(new_trades)]
         for t in new_trades:
             pnl     = t.get("realized_pnl", 0)
             pnl_str = " | P&L: %s$%.2f" % ("+" if pnl >= 0 else "", pnl) if pnl else ""
-            lines.append("  %s %s × %d @ $%.2f%s" % (
-                t["action"], t["ticker"], int(t["quantity"]), t["price"], pnl_str))
+            lines.append("  %s %s × %g @ $%.2f%s" % (
+                t["action"], t["ticker"], t["quantity"], t["price"], pnl_str))
         lines.append("\nPortfolio updated and committed.")
         return "\n".join(lines)
     except Exception as e:
