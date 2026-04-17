@@ -291,27 +291,13 @@ def _trade_uid(t: dict) -> str:
 def filter_new_trades(trades: list[dict]) -> list[dict]:
     """Return only trades not yet processed, and update the seen-set.
 
-    First-run guard: if there is no persisted seen-set (neither in GitHub nor
-    locally), mark everything we see as already-processed without emitting
-    notifications. This prevents a flood of historical trades the very first
-    time Flex is wired up, or if the seen file is ever accidentally deleted.
-    Users who genuinely want a fresh import can set FLEX_INITIAL_IMPORT=1.
+    No bootstrap skip: the Flex query itself is already scoped to a small
+    date window (typically last 1-5 business days) and the exec-ID dedup
+    prevents reapplying. Silent-skipping "first run" was hiding real trades
+    from the user whenever the seen-set got cleared (e.g. fresh install,
+    manual reset, accidental deletion).
     """
     seen = _load_seen()
-
-    if not seen and not os.getenv("FLEX_INITIAL_IMPORT"):
-        # Silent bootstrap: remember these trades as seen so only *future*
-        # executions trigger notifications / portfolio updates.
-        for t in trades:
-            t["_uid"] = _trade_uid(t)
-        bootstrap = {t["_uid"] for t in trades}
-        if bootstrap:
-            _save_seen(bootstrap)
-            logger.info("IB Flex: bootstrapped seen-trades set with %d existing trades "
-                        "(no changes made — future trades will be detected)",
-                        len(bootstrap))
-        return []
-
     new = []
     for t in trades:
         uid = _trade_uid(t)

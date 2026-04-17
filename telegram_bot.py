@@ -1069,16 +1069,7 @@ def cmd_sync(args=""):
                 "Run /sync again after fixing the query in IB Account Management."
             )
 
-        # First-run detection: if no seen-set exists yet, treat /sync as a
-        # deliberate full import of everything Flex is currently returning,
-        # rather than silently bootstrapping and producing "nothing new".
-        prior_seen = ib_flex._load_seen()
-        if not prior_seen:
-            os.environ["FLEX_INITIAL_IMPORT"] = "1"
-        try:
-            new_trades = ib_flex.filter_new_trades(all_trades)
-        finally:
-            os.environ.pop("FLEX_INITIAL_IMPORT", None)
+        new_trades = ib_flex.filter_new_trades(all_trades)
 
         if not new_trades:
             return (
