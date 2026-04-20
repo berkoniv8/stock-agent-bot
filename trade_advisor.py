@@ -128,7 +128,22 @@ def detect_intent(text: str) -> str:
     ]):
         return "update"
 
-    # Portfolio-level questions
+    # Portfolio-level strategic questions (take profits, exit all, cash out, etc.)
+    # Detected first because these are more specific than generic "portfolio" snapshots.
+    if any(p in lower for p in [
+        "take profits", "take profit", "lock in gains", "lock in profit",
+        "cash out", "sell everything", "sell all", "exit all",
+        "close all", "close my positions", "sell my open positions",
+        "sell my positions", "get out", "derisk", "de-risk",
+        "trim", "rotate out", "rotate into cash",
+        "should i sell before", "sell before next week",
+        "before earnings", "before the week", "end of week",
+        "this green week", "this red week", "market pullback",
+        "market crash", "bubble", "correction",
+    ]):
+        return "portfolio_strategy"
+
+    # Portfolio-level questions (snapshot / status)
     if any(p in lower for p in [
         "portfolio", "all positions", "overall", "how am i doing",
         "my stocks", "my holdings", "my money",
@@ -606,6 +621,250 @@ def advise_update(ticker: str, analysis: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Portfolio-level strategic advice
+# ---------------------------------------------------------------------------
+
+def _market_context() -> dict:
+    """Snapshot of the broad market for strategic advice.
+
+    Returns dict with: spy_price, spy_trend (bullish/bearish/neutral),
+    spy_rsi, vix (if available), and a plain-english 'regime' label.
+    """
+    ctx = {
+        "spy_price": None, "spy_trend": "unknown", "spy_rsi": None,
+        "spy_above_200sma": None, "spy_5d_pct": None,
+        "vix": None, "regime": "unknown",
+    }
+    try:
+        import data_layer, technical_analysis
+        df = data_layer.fetch_daily_ohlcv("SPY")
+        if not df.empty:
+            try:
+                tech = technical_analysis.analyze("SPY", df)
+                ctx["spy_price"]        = float(tech.current_price)
+                ctx["spy_rsi"]          = float(tech.rsi)
+                ctx["spy_above_200sma"] = bool(tech.price_above_200sma)
+            except Exception:
+                pass
+
+            # 5-day % change — tolerate either "close" or "Close"
+            try:
+                close_col = "close" if "close" in df.columns else (
+                    "Close" if "Close" in df.columns else None)
+                if close_col and len(df) >= 6:
+                    price_now = float(df[close_col].iloc[-1])
+                    price_5d  = float(df[close_col].iloc[-6])
+                    if price_5d:
+                        ctx["spy_5d_pct"] = round(
+                            (price_now - price_5d) / price_5d * 100, 2)
+            except Exception:
+                pass
+
+            # Regime — based on whatever we managed to collect
+            rsi = ctx["spy_rsi"] or 50
+            if rsi >= 70:
+                ctx["regime"] = "overbought"
+                ctx["spy_trend"] = "bullish-extended"
+            elif rsi >= 60:
+                ctx["regime"] = "strong-uptrend"
+                ctx["spy_trend"] = "bullish"
+            elif rsi <= 30:
+                ctx["regime"] = "oversold"
+                ctx["spy_trend"] = "bearish-extended"
+            elif rsi <= 40:
+                ctx["regime"] = "downtrend"
+                ctx["spy_trend"] = "bearish"
+            else:
+                ctx["regime"] = "neutral"
+                ctx["spy_trend"] = "neutral"
+    except Exception:
+        pass
+
+    try:
+        import data_layer
+        vix_df = data_layer.fetch_daily_ohlcv("^VIX")
+        if not vix_df.empty:
+            ctx["vix"] = float(vix_df["close"].iloc[-1])
+    except Exception:
+        pass
+
+    return ctx
+
+
+def advise_portfolio_strategy(text: str) -> str:
+    """Answer strategic portfolio-wide questions — take profits, de-risk, etc.
+
+    This is the brain behind questions like:
+      'After this crazy green week should I take profits before next week?'
+      'Market looks toppy, should I cash out?'
+      'Should I sell everything?'
+    """
+    try:
+        if not PORTFOLIO_FILE.exists():
+            return "No portfolio found. Add trades first with /bought or /sync."
+        portfolio = json.load(open(PORTFOLIO_FILE))
+    except Exception as e:
+        return "Couldn't load portfolio: %s" % e
+
+    holdings = portfolio.get("holdings", [])
+    if not holdings:
+        return ("You have no open positions right now — nothing to sell.\n"
+                "Use /buy to see fresh ideas.")
+
+    ctx = _market_context()
+    lower = text.lower()
+    bias_sell = any(w in lower for w in [
+        "take profit", "sell", "cash out", "exit", "close", "lock in",
+        "derisk", "de-risk", "trim", "rotate",
+    ])
+
+    # Analyze each holding
+    winners, losers = [], []
+    total_val, total_cost, total_unrealized = 0.0, 0.0, 0.0
+    for h in holdings:
+        shares  = float(h.get("shares", 0) or 0)
+        cost    = float(h.get("avg_cost", 0) or 0)
+        price   = float(h.get("current_price", 0) or 0)
+        value   = float(h.get("current_value", shares * price) or 0)
+        cbasis  = float(h.get("cost_basis", shares * cost) or 0)
+        pnl     = float(h.get("unrealized_pnl", value - cbasis) or 0)
+        pnl_pct = float(h.get("pnl_pct", (pnl / cbasis * 100) if cbasis else 0) or 0)
+        total_val        += value
+        total_cost       += cbasis
+        total_unrealized += pnl
+        rec = {
+            "ticker": h["ticker"], "shares": shares, "price": price,
+            "value": value, "pnl": pnl, "pnl_pct": pnl_pct,
+            "recommendation": None, "reason": None,
+        }
+        if pnl_pct >= 20:
+            rec["recommendation"] = "TRIM 1/3 — 1/2"
+            rec["reason"] = "up %+.0f%% — book some of the gain" % pnl_pct
+            winners.append(rec)
+        elif pnl_pct >= 10:
+            rec["recommendation"] = "TRIM 1/4"
+            rec["reason"] = "up %+.0f%% — lock in a piece" % pnl_pct
+            winners.append(rec)
+        elif pnl_pct >= 3:
+            rec["recommendation"] = "HOLD"
+            rec["reason"] = "small gain %+.0f%% — let it run" % pnl_pct
+            winners.append(rec)
+        elif pnl_pct <= -10:
+            rec["recommendation"] = "REVIEW"
+            rec["reason"] = "down %.0f%% — reassess thesis, consider stop" % pnl_pct
+            losers.append(rec)
+        else:
+            rec["recommendation"] = "HOLD"
+            rec["reason"] = "roughly flat (%+.0f%%)" % pnl_pct
+            (winners if pnl >= 0 else losers).append(rec)
+
+    # Overall portfolio stance based on market + position state
+    pnl_pct_total = (total_unrealized / total_cost * 100) if total_cost else 0
+    n_winners  = len([w for w in winners if w["pnl_pct"] > 0])
+    n_positions = len(holdings)
+
+    lines = []
+    lines.append("Portfolio Strategy Check")
+    lines.append("────────────────────────")
+    lines.append(
+        f"Positions: {n_positions} | Value: ${total_val:,.0f} | "
+        f"Unrealized P&L: ${total_unrealized:+,.0f} ({pnl_pct_total:+.1f}%)"
+    )
+
+    # Market regime
+    regime = ctx.get("regime", "unknown")
+    spy_px = ctx.get("spy_price")
+    spy_rsi = ctx.get("spy_rsi")
+    spy_5d = ctx.get("spy_5d_pct")
+    vix = ctx.get("vix")
+    ctx_line = "Market: "
+    parts = []
+    if spy_px is not None:
+        parts.append("SPY $%.2f" % spy_px)
+    if spy_5d is not None:
+        parts.append("%+.1f%% past 5d" % spy_5d)
+    if spy_rsi is not None:
+        parts.append("RSI %.0f" % spy_rsi)
+    if vix is not None:
+        parts.append("VIX %.1f" % vix)
+    parts.append("regime: %s" % regime)
+    lines.append(ctx_line + " | ".join(parts))
+    lines.append("")
+
+    # Top-level verdict
+    verdict = None
+    why = []
+    if regime == "overbought":
+        verdict = "PARTIAL TAKE-PROFITS"
+        why.append("market is overbought (SPY RSI >= 70) — short-term pullback risk is elevated")
+    elif regime == "bullish-extended":
+        verdict = "TRIM WINNERS, KEEP CORE"
+        why.append("market is extended but still strong — book some gains, don't abandon trend")
+    elif regime == "strong-uptrend":
+        verdict = "HOLD / LET WINNERS RUN"
+        why.append("trend is healthy — selling here usually costs more than it saves")
+    elif regime == "neutral":
+        verdict = "HOLD / RE-RANK POSITIONS"
+        why.append("no clear directional edge — trim your weakest names, not your strongest")
+    elif regime in ("downtrend", "bearish-extended"):
+        verdict = "RAISE CASH, TIGHTEN STOPS"
+        why.append("market is weak — protect capital, cut losers first")
+    else:
+        verdict = "HOLD"
+        why.append("insufficient market data — defaulting to hold")
+
+    if vix is not None:
+        if vix < 14:
+            why.append("VIX is low (%.1f) — complacent tape, headline risk is asymmetric" % vix)
+        elif vix > 22:
+            why.append("VIX is elevated (%.1f) — fear already priced in, selling into it is usually late" % vix)
+
+    if pnl_pct_total >= 15:
+        why.append("you're up %+.1f%% overall — bagging a portion is defensible" % pnl_pct_total)
+    elif pnl_pct_total <= -5:
+        why.append("you're down %+.1f%% overall — focus on losers, not winners" % pnl_pct_total)
+
+    lines.append("Verdict: %s" % verdict)
+    for w in why:
+        lines.append("  • %s" % w)
+    lines.append("")
+
+    # Per-position recommendations
+    lines.append("Per-position:")
+    all_recs = sorted(winners + losers, key=lambda r: -r["pnl_pct"])
+    for r in all_recs:
+        lines.append("  %s  $%.2f × %g  (%+.1f%%)  →  %s" % (
+            r["ticker"].ljust(5), r["price"], r["shares"], r["pnl_pct"], r["recommendation"]))
+        lines.append("     %s" % r["reason"])
+
+    # Actionable summary
+    lines.append("")
+    lines.append("Action plan:")
+    trim_list = [r for r in winners if r["recommendation"].startswith("TRIM")]
+    review    = [r for r in losers  if r["recommendation"] == "REVIEW"]
+
+    if regime in ("overbought", "bullish-extended") and trim_list:
+        lines.append("  1. Take partial profits on: %s" % ", ".join(r["ticker"] for r in trim_list))
+        lines.append("     (don't close fully — the trend may continue next week)")
+    elif bias_sell and trim_list:
+        lines.append("  1. You're leaning toward selling. Start with partials on winners:")
+        lines.append("     %s" % ", ".join(r["ticker"] for r in trim_list))
+    else:
+        lines.append("  1. No panic exit. Hold core positions.")
+
+    if review:
+        lines.append("  2. Reassess laggards: %s" % ", ".join(r["ticker"] for r in review))
+        lines.append("     — either add at support or cut on broken thesis")
+
+    lines.append("  3. Set stops on all positions (at 200 SMA or entry -8%)")
+    lines.append("  4. Keep 10-20% cash ready for pullback buys")
+    lines.append("")
+    lines.append("(This is bot analysis, not financial advice — you make the call.)")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -613,6 +872,10 @@ def answer_question(text: str) -> str:
     """Take a natural language question and return plain English advice."""
     ticker = extract_ticker(text)
     intent = detect_intent(text)
+
+    # Portfolio strategy questions — "should I take profits?" "sell everything?"
+    if intent == "portfolio_strategy":
+        return advise_portfolio_strategy(text)
 
     # Portfolio-level questions (no ticker needed)
     if intent == "portfolio":

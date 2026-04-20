@@ -289,13 +289,12 @@ def _trade_uid(t: dict) -> str:
 
 
 def filter_new_trades(trades: list[dict]) -> list[dict]:
-    """Return only trades not yet processed, and update the seen-set.
+    """Return only trades not yet processed.
 
-    No bootstrap skip: the Flex query itself is already scoped to a small
-    date window (typically last 1-5 business days) and the exec-ID dedup
-    prevents reapplying. Silent-skipping "first run" was hiding real trades
-    from the user whenever the seen-set got cleared (e.g. fresh install,
-    manual reset, accidental deletion).
+    IMPORTANT: this function no longer saves the seen-set. The caller
+    (sync_new_trades) is responsible for marking a trade seen AFTER it
+    has been successfully applied to the portfolio. Otherwise a crash
+    in apply_trade_to_portfolio would silently consume the trade.
     """
     seen = _load_seen()
     new = []
@@ -304,10 +303,22 @@ def filter_new_trades(trades: list[dict]) -> list[dict]:
         if uid not in seen:
             t["_uid"] = uid
             new.append(t)
-    if new:
-        seen.update(t["_uid"] for t in new)
-        _save_seen(seen)
     return new
+
+
+def mark_trade_seen(uid: str) -> None:
+    """Mark a single trade UID as seen (local + GitHub persistence).
+
+    Called by sync_new_trades after a successful apply, so a crash
+    mid-loop does not lose any trades.
+    """
+    if not uid:
+        return
+    seen = _load_seen()
+    if uid in seen:
+        return
+    seen.add(uid)
+    _save_seen(seen)
 
 
 # ---------------------------------------------------------------------------
@@ -510,21 +521,42 @@ def sync_new_trades(notify: bool = True) -> list[dict]:
 
     logger.info("IB Flex: %d new trade(s) detected — processing", len(new_trades))
     portfolio = _load_portfolio()
+    applied: list[dict] = []
 
     for trade in new_trades:
         logger.info("  Processing %s %s × %s @ $%s",
                     trade["action"], trade["ticker"],
                     trade["quantity"], trade["price"])
-        portfolio = apply_trade_to_portfolio(trade, portfolio)
-        _save_portfolio(portfolio)
+        try:
+            portfolio = apply_trade_to_portfolio(trade, portfolio)
+            _save_portfolio(portfolio)
+        except Exception as e:
+            # Do NOT mark seen on failure — we want to retry next cycle
+            logger.error("Failed to apply trade %s %s × %s: %s",
+                         trade.get("action"), trade.get("ticker"),
+                         trade.get("quantity"), e)
+            continue
+
+        # Trade successfully applied — mark seen so we never double-process it
+        mark_trade_seen(trade.get("_uid", ""))
+        applied.append(trade)
 
         if notify:
-            _send_trade_notification(trade, portfolio)
+            try:
+                _send_trade_notification(trade, portfolio)
+            except Exception as e:
+                # Notification failure must not roll back the applied trade
+                logger.warning("Trade applied but notification failed: %s", e)
 
     # Commit once after all trades are applied
-    _commit_portfolio(portfolio)
-    logger.info("IB Flex: portfolio updated and committed (%d trades)", len(new_trades))
-    return new_trades
+    if applied:
+        _commit_portfolio(portfolio)
+        logger.info("IB Flex: portfolio updated and committed (%d of %d trades)",
+                    len(applied), len(new_trades))
+    else:
+        logger.warning("IB Flex: %d trade(s) detected but none applied — will retry next cycle",
+                       len(new_trades))
+    return applied
 
 
 if __name__ == "__main__":

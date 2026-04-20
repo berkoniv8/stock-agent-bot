@@ -1081,18 +1081,35 @@ def cmd_sync(args=""):
 
         # Apply each new trade to portfolio
         portfolio = ib_flex._load_portfolio()
+        applied = []
+        failed  = []
         for trade in new_trades:
-            portfolio = ib_flex.apply_trade_to_portfolio(trade, portfolio)
-            ib_flex._save_portfolio(portfolio)
-        ib_flex._commit_portfolio(portfolio)
+            try:
+                portfolio = ib_flex.apply_trade_to_portfolio(trade, portfolio)
+                ib_flex._save_portfolio(portfolio)
+                ib_flex.mark_trade_seen(trade.get("_uid", ""))
+                applied.append(trade)
+            except Exception as e:
+                failed.append((trade, str(e)))
 
-        lines = ["Synced %d new trade(s):" % len(new_trades)]
-        for t in new_trades:
+        if applied:
+            ib_flex._commit_portfolio(portfolio)
+
+        lines = ["Synced %d of %d trade(s):" % (len(applied), len(new_trades))]
+        for t in applied:
             pnl     = t.get("realized_pnl", 0)
             pnl_str = " | P&L: %s$%.2f" % ("+" if pnl >= 0 else "", pnl) if pnl else ""
             lines.append("  %s %s × %g @ $%.2f%s" % (
                 t["action"], t["ticker"], t["quantity"], t["price"], pnl_str))
-        lines.append("\nPortfolio updated and committed.")
+        if failed:
+            lines.append("")
+            lines.append("%d trade(s) failed and will retry next sync:" % len(failed))
+            for t, err in failed:
+                lines.append("  %s %s × %g — %s" % (
+                    t.get("action"), t.get("ticker"), t.get("quantity"), err[:100]))
+        if applied:
+            lines.append("")
+            lines.append("Portfolio updated and committed.")
         return "\n".join(lines)
     except Exception as e:
         return "Sync error: %s" % e
