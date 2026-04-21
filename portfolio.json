@@ -1,6 +1,6 @@
 {
-  "total_portfolio_value": 152434.39,
-  "available_cash": 32937.29,
+  "total_portfolio_value": 152760.63,
+  "available_cash": 60829.05,
   "max_risk_per_trade_pct": 1.0,
   "max_position_size_pct": 10.0,
   "holdings": [
@@ -54,12 +54,12 @@
     },
     {
       "ticker": "QQQ",
-      "shares": 83.0,
+      "shares": 33.0,
       "avg_cost": 370.35168675,
       "current_price": 646.77001953125,
-      "current_value": 53681.91162109375,
+      "current_value": 21396.21,
       "cost_basis": 30739.19000025,
-      "unrealized_pnl": 22942.72162084375,
+      "unrealized_pnl": 9174.6,
       "pnl_pct": 74.636714957867,
       "sector": "ETF",
       "strategy": "long_term"
@@ -86,18 +86,6 @@
       "unrealized_pnl": 902.0598392671873,
       "pnl_pct": 17.838198092478397,
       "sector": "Consumer Discretionary",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 88.0,
-      "avg_cost": 95.08613635,
-      "current_price": 94.8501968383789,
-      "current_value": 8346.817321777344,
-      "cost_basis": 8367.5799988,
-      "unrealized_pnl": -20.762677022656135,
-      "pnl_pct": -0.24813239939903442,
-      "sector": "Communication Services",
       "strategy": "long_term"
     },
     {
@@ -145,6 +133,30 @@
       "current_value": 6688.9599609375,
       "unrealized_pnl": 416.7199609375002,
       "pnl_pct": 6.643877800235646,
+      "sector": "Unknown",
+      "strategy": "trade"
+    },
+    {
+      "ticker": "MP",
+      "shares": 100.0,
+      "avg_cost": 65.9284,
+      "current_price": 65.93,
+      "cost_basis": 6592.84,
+      "current_value": 6593.0,
+      "unrealized_pnl": 0.16,
+      "pnl_pct": 0.0,
+      "sector": "Unknown",
+      "strategy": "trade"
+    },
+    {
+      "ticker": "ONDS",
+      "shares": 600.0,
+      "avg_cost": 10.79,
+      "current_price": 10.79,
+      "cost_basis": 6474.0,
+      "current_value": 6474.0,
+      "unrealized_pnl": 0.0,
+      "pnl_pct": 0.0,
       "sector": "Unknown",
       "strategy": "trade"
     }
@@ -422,13 +434,103 @@
       "pnl_pct": 15.84,
       "date": "2026-04-17",
       "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 20.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": 13.28,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 10.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": 9.2,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 15.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": 7.132727,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 10.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": -24.136364,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 30.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": -15.910277,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 3.0,
+      "avg_cost": 95.08613635,
+      "exit_price": 95.01,
+      "realized_pnl": -188.861087,
+      "pnl_pct": -0.08,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "NFLX",
+      "shares": 2.0,
+      "avg_cost": 95.01,
+      "exit_price": 95.01,
+      "realized_pnl": -10.005,
+      "pnl_pct": 0.0,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "QQQ",
+      "shares": 30.0,
+      "avg_cost": 370.35168675,
+      "exit_price": 648.01,
+      "realized_pnl": 10299.519355,
+      "pnl_pct": 74.97,
+      "date": "2026-04-20",
+      "source": "ib_flex"
+    },
+    {
+      "ticker": "QQQ",
+      "shares": 20.0,
+      "avg_cost": 370.35168675,
+      "exit_price": 648.37,
+      "realized_pnl": 5834.282953,
+      "pnl_pct": 75.07,
+      "date": "2026-04-20",
+      "source": "ib_flex"
     }
   ],
-  "realized_pnl_ytd": -8574.04,
+  "realized_pnl_ytd": 7350.46,
   "unrealized_pnl_total": 13846.4,
   "_broker": "Interactive Brokers",
   "_account": "clientam.com",
-  "_last_updated": "2026-04-20T20:26:21.500311",
+  "_last_updated": "2026-04-21T06:39:37.053038",
   "last_ib_sync": "2026-03-27T23:53:02.308618+00:00",
-  "last_flex_sync": "2026-04-20T20:26:21.500315"
+  "last_flex_sync": "2026-04-21T06:39:37.053041"
 }
