@@ -1,858 +1,858 @@
 {
-  "total_portfolio_value": 149727.55,
-  "available_cash": 12675.38,
-  "max_risk_per_trade_pct": 1.0,
-  "max_position_size_pct": 10.0,
-  "holdings": [
-    {
-      "ticker": "ZETA",
-      "shares": 195.0,
-      "avg_cost": 17.13601265,
-      "current_price": 16.114999771118164,
-      "current_value": 3142.424955368042,
-      "cost_basis": 3341.52246675,
-      "unrealized_pnl": -199.09751138195816,
-      "pnl_pct": -5.958287378375837,
-      "sector": "Technology",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "SPY",
-      "shares": 13.0,
-      "avg_cost": 409.2721739,
-      "current_price": 743.438720703125,
-      "current_value": 9664.703369140625,
-      "cost_basis": 5320.5382607,
-      "unrealized_pnl": 4344.165108440625,
-      "pnl_pct": 81.64897789625296,
-      "sector": "ETF",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "BMNR",
-      "shares": 296.0,
-      "avg_cost": 26.1789088,
-      "current_price": 21.389999389648438,
-      "current_value": 6331.4398193359375,
-      "cost_basis": 7748.9570048,
-      "unrealized_pnl": -1417.517185464062,
-      "pnl_pct": -18.293006201815263,
-      "sector": "Technology",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "URA",
-      "shares": 175.0,
-      "avg_cost": 52.0814,
-      "current_price": 53.345001220703125,
-      "current_value": 9335.375213623047,
-      "cost_basis": 9114.245,
-      "unrealized_pnl": 221.13021362304607,
-      "pnl_pct": 2.426204404457484,
-      "sector": "ETF",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "AVGO",
-      "shares": 1.0,
-      "avg_cost": 333.96666665,
-      "current_price": 417.7200012207031,
-      "current_value": 417.7200012207031,
-      "cost_basis": 333.96666665,
-      "unrealized_pnl": 83.75333457070315,
-      "pnl_pct": 25.07835150460611,
-      "sector": "Technology",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "AMZN",
-      "shares": 4.0,
-      "avg_cost": 210.70416665,
-      "current_price": 270.67999267578125,
-      "current_value": 1082.719970703125,
-      "cost_basis": 842.8166666,
-      "unrealized_pnl": 239.90330410312504,
-      "pnl_pct": 28.464470816757466,
-      "sector": "Consumer Discretionary",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "META",
-      "shares": 13.0,
-      "avg_cost": 656.1226923,
-      "current_price": 616.9401245117188,
-      "current_value": 8020.221618652344,
-      "cost_basis": 8529.5949999,
-      "unrealized_pnl": -509.37338124765665,
-      "pnl_pct": -5.971835488714628,
-      "sector": "Technology",
-      "strategy": "long_term"
-    },
-    {
-      "ticker": "SLV",
-      "shares": 200.0,
-      "avg_cost": 71.9075,
-      "current_price": 79.43009948730469,
-      "cost_basis": 14381.5,
-      "current_value": 15886.019897460938,
-      "unrealized_pnl": 1504.5198974609375,
-      "pnl_pct": 10.461494958529622,
-      "sector": "ETF",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "GE",
-      "shares": 28.0,
-      "avg_cost": 284.6,
-      "current_price": 295.57501220703125,
-      "cost_basis": 7968.800000000001,
-      "current_value": 8276.100341796875,
-      "unrealized_pnl": 307.3003417968739,
-      "pnl_pct": 3.8562938183524977,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 110.0,
-      "avg_cost": 90.0,
-      "current_price": 87.80999755859375,
-      "cost_basis": 9900.0,
-      "current_value": 9659.099731445312,
-      "unrealized_pnl": -240.9002685546875,
-      "pnl_pct": -2.4333360460069446,
-      "sector": "Communication Services",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "RTX",
-      "shares": 40.0,
-      "avg_cost": 174.386,
-      "current_price": 178.85000610351562,
-      "cost_basis": 6975.44,
-      "current_value": 7154.000244140625,
-      "unrealized_pnl": 178.5602441406254,
-      "pnl_pct": 2.5598420191504108,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "MP",
-      "shares": 100.0,
-      "avg_cost": 64.8924,
-      "current_price": 64.75499725341797,
-      "cost_basis": 6489.24,
-      "current_value": 6475.499725341797,
-      "unrealized_pnl": -13.740274658202907,
-      "pnl_pct": -0.21173935095947916,
-      "sector": "Materials",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 100.0,
-      "avg_cost": 9.97,
-      "current_price": 9.015000343322754,
-      "cost_basis": 997.0000000000001,
-      "current_value": 901.5000343322754,
-      "unrealized_pnl": -95.49996566772472,
-      "pnl_pct": -9.578732765067674,
-      "sector": "Technology",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "PLTR",
-      "shares": 60.0,
-      "avg_cost": 148.5,
-      "current_price": 130.25999450683594,
-      "cost_basis": 8910.0,
-      "current_value": 7815.599670410156,
-      "unrealized_pnl": -1094.4003295898438,
-      "pnl_pct": -12.28283198192866,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "ETN",
-      "shares": 30.0,
-      "avg_cost": 415.755,
-      "current_price": 408.3074951171875,
-      "cost_basis": 12472.65,
-      "current_value": 12249.224853515625,
-      "unrealized_pnl": -223.42514648437464,
-      "pnl_pct": -1.7913205813068969,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "JPM",
-      "shares": 20.0,
-      "avg_cost": 299.0,
-      "current_price": 301.2550048828125,
-      "cost_basis": 5980.0,
-      "current_value": 6025.10009765625,
-      "unrealized_pnl": 45.10009765625,
-      "pnl_pct": 0.7541822350543478,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "NBR",
-      "shares": 100.0,
-      "avg_cost": 100.51,
-      "current_price": 101.38999938964844,
-      "cost_basis": 10051.0,
-      "current_value": 10138.999938964844,
-      "unrealized_pnl": 87.99993896484375,
-      "pnl_pct": 0.8755341654048726,
-      "sector": "Unknown",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "SOFI",
-      "shares": 350.0,
-      "avg_cost": 16.29,
-      "current_price": 15.380000114440918,
-      "cost_basis": 5701.5,
-      "current_value": 5383.000040054321,
-      "unrealized_pnl": -318.4999599456787,
-      "pnl_pct": -5.586248530135555,
-      "sector": "Financials",
-      "strategy": "trade"
-    },
-    {
-      "ticker": "NVDA",
-      "shares": 40.0,
-      "avg_cost": 227.3355,
-      "current_price": 227.3355,
-      "cost_basis": 9093.42,
-      "current_value": 9093.42,
-      "unrealized_pnl": 0.0,
-      "pnl_pct": 0.0,
-      "sector": "Unknown",
-      "strategy": "trade"
-    }
-  ],
-  "realized_trades_ytd": [
-    {
-      "ticker": "ABBV",
-      "realized_pnl": -293.96,
-      "type": "short_term"
-    },
-    {
-      "ticker": "ASTS",
-      "realized_pnl": 4359.0,
-      "type": "short_term"
-    },
-    {
-      "ticker": "BIDU",
-      "realized_pnl": -246.7,
-      "type": "short_term"
-    },
-    {
-      "ticker": "BMNR",
-      "realized_pnl": -9353.76,
-      "type": "short_term"
-    },
-    {
-      "ticker": "BSOL",
-      "realized_pnl": -1533.95,
-      "type": "short_term"
-    },
-    {
-      "ticker": "CRWD",
-      "realized_pnl": 0.0,
-      "type": "short_term"
-    },
-    {
-      "ticker": "EOSE",
-      "realized_pnl": -408.1,
-      "type": "short_term"
-    },
-    {
-      "ticker": "GEV",
-      "realized_pnl": -35.2,
-      "type": "short_term"
-    },
-    {
-      "ticker": "GME",
-      "realized_pnl": 206.64,
-      "type": "short_term"
-    },
-    {
-      "ticker": "HIMS",
-      "realized_pnl": -310.66,
-      "type": "short_term"
-    },
-    {
-      "ticker": "HOOD",
-      "realized_pnl": -1342.15,
-      "type": "short_term"
-    },
-    {
-      "ticker": "IREN",
-      "realized_pnl": 674.28,
-      "type": "short_term"
-    },
-    {
-      "ticker": "MAGS",
-      "realized_pnl": 1081.34,
-      "type": "short_term"
-    },
-    {
-      "ticker": "META",
-      "realized_pnl": -37.35,
-      "type": "short_term"
-    },
-    {
-      "ticker": "NBIS",
-      "realized_pnl": -133.4,
-      "type": "short_term"
-    },
-    {
-      "ticker": "NFLX",
-      "realized_pnl": -249.8,
-      "type": "short_term"
-    },
-    {
-      "ticker": "NTR",
-      "realized_pnl": -19.53,
-      "type": "short_term"
-    },
-    {
-      "ticker": "NVO",
-      "realized_pnl": -920.1,
-      "type": "short_term"
-    },
-    {
-      "ticker": "OKLO",
-      "realized_pnl": -190.25,
-      "type": "short_term"
-    },
-    {
-      "ticker": "RBLX",
-      "realized_pnl": -704.8,
-      "type": "short_term"
-    },
-    {
-      "ticker": "RKLB",
-      "realized_pnl": 1045.26,
-      "type": "short_term"
-    },
-    {
-      "ticker": "SLV",
-      "realized_pnl": -393.46,
-      "type": "short_term"
-    },
-    {
-      "ticker": "SOFI",
-      "realized_pnl": -646.17,
-      "type": "short_term"
-    },
-    {
-      "ticker": "TMQ",
-      "realized_pnl": -355.0,
-      "type": "short_term"
-    },
-    {
-      "ticker": "TSLA",
-      "realized_pnl": -408.08,
-      "type": "short_term"
-    },
-    {
-      "ticker": "XLE",
-      "realized_pnl": 1030.12,
-      "type": "short_term"
-    },
-    {
-      "ticker": "XPEV",
-      "realized_pnl": -718.4,
-      "type": "short_term"
-    },
-    {
-      "ticker": "CRWD",
-      "shares": 15.0,
-      "avg_cost": 451.25666665,
-      "exit_price": 370.0,
-      "realized_pnl": -1218.85,
-      "pnl_pct": -18.01,
-      "date": "2026-03-31"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 300.0,
-      "avg_cost": 11.34,
-      "exit_price": 8.6,
-      "realized_pnl": -822.0,
-      "pnl_pct": -24.16,
-      "date": "2026-03-31"
-    },
-    {
-      "ticker": "SPY",
-      "shares": 10.0,
-      "avg_cost": 409.2721739,
-      "exit_price": 674.55,
-      "realized_pnl": 2650.278261,
-      "pnl_pct": 64.82,
-      "date": "2026-04-13",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "DELL",
-      "shares": 30.0,
-      "avg_cost": 182.09333335,
-      "exit_price": 183.5,
-      "realized_pnl": 39.7,
-      "pnl_pct": 0.77,
-      "date": "2026-04-14",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "AVGO",
-      "shares": 7.0,
-      "avg_cost": 333.96666665,
-      "exit_price": 406.05,
-      "realized_pnl": 502.083333,
-      "pnl_pct": 21.58,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 13.0,
-      "avg_cost": 62.41,
-      "exit_price": 60.91,
-      "realized_pnl": -22.0,
-      "pnl_pct": -2.4,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 37.0,
-      "avg_cost": 62.41,
-      "exit_price": 60.9,
-      "realized_pnl": -55.87,
-      "pnl_pct": -2.42,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "TSLA",
-      "shares": 9.0,
-      "avg_cost": 451.87889,
-      "exit_price": 400.8,
-      "realized_pnl": -462.2,
-      "pnl_pct": -11.3,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "URA",
-      "shares": 50.0,
-      "avg_cost": 48.1,
-      "exit_price": 55.72,
-      "realized_pnl": 378.5,
-      "pnl_pct": 15.84,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "AVGO",
-      "shares": 7.0,
-      "avg_cost": 333.96666665,
-      "exit_price": 406.05,
-      "realized_pnl": 502.083333,
-      "pnl_pct": 21.58,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 13.0,
-      "avg_cost": 60.91,
-      "exit_price": 60.91,
-      "realized_pnl": -22.0,
-      "pnl_pct": 0.0,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 37.0,
-      "avg_cost": 60.9,
-      "exit_price": 60.9,
-      "realized_pnl": -55.87,
-      "pnl_pct": 0.0,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "TSLA",
-      "shares": 9.0,
-      "avg_cost": 451.87889,
-      "exit_price": 400.8,
-      "realized_pnl": -462.2,
-      "pnl_pct": -11.3,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "URA",
-      "shares": 50.0,
-      "avg_cost": 48.1,
-      "exit_price": 55.72,
-      "realized_pnl": 378.5,
-      "pnl_pct": 15.84,
-      "date": "2026-04-17",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 20.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": 13.28,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 10.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": 9.2,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 15.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": 7.132727,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 10.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": -24.136364,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 30.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": -15.910277,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 3.0,
-      "avg_cost": 95.08613635,
-      "exit_price": 95.01,
-      "realized_pnl": -188.861087,
-      "pnl_pct": -0.08,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 2.0,
-      "avg_cost": 95.01,
-      "exit_price": 95.01,
-      "realized_pnl": -10.005,
-      "pnl_pct": 0.0,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "QQQ",
-      "shares": 30.0,
-      "avg_cost": 370.35168675,
-      "exit_price": 648.01,
-      "realized_pnl": 10299.519355,
-      "pnl_pct": 74.97,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "QQQ",
-      "shares": 20.0,
-      "avg_cost": 370.35168675,
-      "exit_price": 648.37,
-      "realized_pnl": 5834.282953,
-      "pnl_pct": 75.07,
-      "date": "2026-04-20",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "AMZN",
-      "shares": 20.0,
-      "avg_cost": 210.70416665,
-      "exit_price": 255.27,
-      "realized_pnl": 888.816667,
-      "pnl_pct": 21.15,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 50.0,
-      "avg_cost": 65.9284,
-      "exit_price": 68.7,
-      "realized_pnl": 133.66,
-      "pnl_pct": 4.2,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 400.0,
-      "avg_cost": 10.79,
-      "exit_price": 11.03,
-      "realized_pnl": 87.833333,
-      "pnl_pct": 2.22,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "QQQ",
-      "shares": 20.0,
-      "avg_cost": 370.35168675,
-      "exit_price": 655.235,
-      "realized_pnl": 4333.841025,
-      "pnl_pct": 76.92,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ZETA",
-      "shares": 127.0,
-      "avg_cost": 17.13601265,
-      "exit_price": 17.96,
-      "realized_pnl": 156.139565,
-      "pnl_pct": 4.81,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ZETA",
-      "shares": 18.0,
-      "avg_cost": 17.13601265,
-      "exit_price": 17.95,
-      "realized_pnl": 22.304348,
-      "pnl_pct": 4.75,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ZETA",
-      "shares": 50.0,
-      "avg_cost": 17.13601265,
-      "exit_price": 17.96,
-      "realized_pnl": 62.456522,
-      "pnl_pct": 4.81,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ZETA",
-      "shares": 5.0,
-      "avg_cost": 17.13601265,
-      "exit_price": 17.96,
-      "realized_pnl": 6.245652,
-      "pnl_pct": 4.81,
-      "date": "2026-04-22",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "PLTR",
-      "shares": 23.0,
-      "avg_cost": 133.31,
-      "exit_price": 141.9215,
-      "realized_pnl": 194.227291,
-      "pnl_pct": 6.46,
-      "date": "2026-04-23",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "PLTR",
-      "shares": 20.0,
-      "avg_cost": 133.31,
-      "exit_price": 141.9145,
-      "realized_pnl": 170.927209,
-      "pnl_pct": 6.45,
-      "date": "2026-04-23",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "QQQ",
-      "shares": 13.0,
-      "avg_cost": 370.35168675,
-      "exit_price": 651.165,
-      "realized_pnl": 2763.211667,
-      "pnl_pct": 75.82,
-      "date": "2026-04-23",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "TSLA",
-      "shares": 0.8,
-      "avg_cost": 451.87889,
-      "exit_price": 373.14,
-      "realized_pnl": -65.490222,
-      "pnl_pct": -17.42,
-      "date": "2026-04-23",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "TSLA",
-      "shares": 1.2,
-      "avg_cost": 451.87889,
-      "exit_price": 373.15,
-      "realized_pnl": -787.3,
-      "pnl_pct": -17.42,
-      "date": "2026-04-23",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MP",
-      "shares": 50.0,
-      "avg_cost": 65.9284,
-      "exit_price": 60.97,
-      "realized_pnl": -250.5,
-      "pnl_pct": -7.52,
-      "date": "2026-04-24",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ASTS",
-      "shares": 15.0,
-      "avg_cost": 77.55,
-      "exit_price": 77.08,
-      "realized_pnl": -10.126923,
-      "pnl_pct": -0.61,
-      "date": "2026-04-28",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ASTS",
-      "shares": 2.0,
-      "avg_cost": 77.55,
-      "exit_price": 77.08,
-      "realized_pnl": -1.016923,
-      "pnl_pct": -0.61,
-      "date": "2026-04-28",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ASTS",
-      "shares": 39.0,
-      "avg_cost": 77.55,
-      "exit_price": 77.08,
-      "realized_pnl": -19.83,
-      "pnl_pct": -0.61,
-      "date": "2026-04-28",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ASTS",
-      "shares": 5.0,
-      "avg_cost": 77.55,
-      "exit_price": 77.08,
-      "realized_pnl": -2.542308,
-      "pnl_pct": -0.61,
-      "date": "2026-04-28",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ASTS",
-      "shares": 4.0,
-      "avg_cost": 77.55,
-      "exit_price": 77.08,
-      "realized_pnl": -2.033846,
-      "pnl_pct": -0.61,
-      "date": "2026-04-28",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 100.0,
-      "avg_cost": 10.79,
-      "exit_price": 9.51,
-      "realized_pnl": -131.333333,
-      "pnl_pct": -11.86,
-      "date": "2026-04-29",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "ONDS",
-      "shares": 100.0,
-      "avg_cost": 10.79,
-      "exit_price": 9.51,
-      "realized_pnl": -129.25,
-      "pnl_pct": -11.86,
-      "date": "2026-04-29",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "RKLB",
-      "shares": 100.0,
-      "avg_cost": 81.55,
-      "exit_price": 76.845,
-      "realized_pnl": -475.5,
-      "pnl_pct": -5.77,
-      "date": "2026-04-29",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "MSFT",
-      "shares": 16.0,
-      "avg_cost": 392.015,
-      "exit_price": 409.64,
-      "realized_pnl": 277.0,
-      "pnl_pct": 4.5,
-      "date": "2026-04-30",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "NFLX",
-      "shares": 40.0,
-      "avg_cost": 90.0,
-      "exit_price": 85.3,
-      "realized_pnl": -251.5,
-      "pnl_pct": -5.22,
-      "date": "2026-05-11",
-      "source": "ib_flex"
-    },
-    {
-      "ticker": "CEG",
-      "shares": 35.0,
-      "avg_cost": 299.23,
-      "exit_price": 279.0187,
-      "realized_pnl": -712.3955,
-      "pnl_pct": -6.75,
-      "date": "2026-05-13",
-      "source": "ib_flex"
-    }
-  ],
-  "realized_pnl_ytd": 13608.31,
-  "unrealized_pnl_total": 13846.4,
-  "_broker": "Interactive Brokers",
-  "_account": "clientam.com",
-  "_last_updated": "2026-05-14T04:13:39.577867",
-  "last_ib_sync": "2026-03-27T23:53:02.308618+00:00",
-  "last_flex_sync": "2026-05-14T04:13:39.577873"
+    "total_portfolio_value": 148928.91,
+    "available_cash": 12675.38,
+    "max_risk_per_trade_pct": 1.0,
+    "max_position_size_pct": 10.0,
+    "holdings": [
+        {
+            "ticker": "ZETA",
+            "shares": 195.0,
+            "avg_cost": 17.13601265,
+            "current_price": 15.970000267028809,
+            "current_value": 3114.1500520706177,
+            "cost_basis": 3341.52246675,
+            "unrealized_pnl": -227.37241467938247,
+            "pnl_pct": -6.8044556618087695,
+            "sector": "Technology",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "SPY",
+            "shares": 13.0,
+            "avg_cost": 409.2721739,
+            "current_price": 745.3200073242188,
+            "current_value": 9689.160095214844,
+            "cost_basis": 5320.5382607,
+            "unrealized_pnl": 4368.621834514844,
+            "pnl_pct": 82.10864428479991,
+            "sector": "ETF",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "BMNR",
+            "shares": 296.0,
+            "avg_cost": 26.1789088,
+            "current_price": 20.96500015258789,
+            "current_value": 6205.640045166016,
+            "cost_basis": 7748.9570048,
+            "unrealized_pnl": -1543.316959633984,
+            "pnl_pct": -19.916447577112567,
+            "sector": "Technology",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "URA",
+            "shares": 175.0,
+            "avg_cost": 52.0814,
+            "current_price": 52.79999923706055,
+            "current_value": 9239.999866485596,
+            "cost_basis": 9114.245,
+            "unrealized_pnl": 125.7548664855949,
+            "pnl_pct": 1.379761751912472,
+            "sector": "ETF",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "AVGO",
+            "shares": 1.0,
+            "avg_cost": 333.96666665,
+            "current_price": 432.80999755859375,
+            "current_value": 432.80999755859375,
+            "cost_basis": 333.96666665,
+            "unrealized_pnl": 98.84333090859377,
+            "pnl_pct": 29.59676541976043,
+            "sector": "Technology",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "AMZN",
+            "shares": 4.0,
+            "avg_cost": 210.70416665,
+            "current_price": 269.5799865722656,
+            "current_value": 1078.3199462890625,
+            "cost_basis": 842.8166666,
+            "unrealized_pnl": 235.50327968906254,
+            "pnl_pct": 27.94240895105984,
+            "sector": "Consumer Discretionary",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "META",
+            "shares": 13.0,
+            "avg_cost": 656.1226923,
+            "current_price": 616.64501953125,
+            "current_value": 8016.38525390625,
+            "cost_basis": 8529.5949999,
+            "unrealized_pnl": -513.2097459937504,
+            "pnl_pct": -6.016812591919865,
+            "sector": "Technology",
+            "strategy": "long_term"
+        },
+        {
+            "ticker": "SLV",
+            "shares": 200.0,
+            "avg_cost": 71.9075,
+            "current_price": 76.62000274658203,
+            "cost_basis": 14381.5,
+            "current_value": 15324.000549316406,
+            "unrealized_pnl": 942.5005493164062,
+            "pnl_pct": 6.553562210592818,
+            "sector": "ETF",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "GE",
+            "shares": 28.0,
+            "avg_cost": 284.6,
+            "current_price": 296.29998779296875,
+            "cost_basis": 7968.800000000001,
+            "current_value": 8296.399658203125,
+            "unrealized_pnl": 327.5996582031239,
+            "pnl_pct": 4.11102873962358,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 110.0,
+            "avg_cost": 90.0,
+            "current_price": 87.92009735107422,
+            "cost_basis": 9900.0,
+            "current_value": 9671.210708618164,
+            "unrealized_pnl": -228.78929138183594,
+            "pnl_pct": -2.311002943250868,
+            "sector": "Communication Services",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "RTX",
+            "shares": 40.0,
+            "avg_cost": 174.386,
+            "current_price": 178.1300048828125,
+            "cost_basis": 6975.44,
+            "current_value": 7125.2001953125,
+            "unrealized_pnl": 149.7601953125004,
+            "pnl_pct": 2.146964138642156,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "MP",
+            "shares": 100.0,
+            "avg_cost": 64.8924,
+            "current_price": 60.560001373291016,
+            "cost_basis": 6489.24,
+            "current_value": 6056.000137329102,
+            "unrealized_pnl": -433.2398626708982,
+            "pnl_pct": -6.676280468450823,
+            "sector": "Materials",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "ONDS",
+            "shares": 100.0,
+            "avg_cost": 9.97,
+            "current_price": 9.725000381469727,
+            "cost_basis": 997.0000000000001,
+            "current_value": 972.5000381469727,
+            "unrealized_pnl": -24.499961853027457,
+            "pnl_pct": -2.457368290173265,
+            "sector": "Technology",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "PLTR",
+            "shares": 60.0,
+            "avg_cost": 148.5,
+            "current_price": 130.8000030517578,
+            "cost_basis": 8910.0,
+            "current_value": 7848.000183105469,
+            "unrealized_pnl": -1061.9998168945312,
+            "pnl_pct": -11.919189864136154,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "ETN",
+            "shares": 30.0,
+            "avg_cost": 415.755,
+            "current_price": 408.8699951171875,
+            "cost_basis": 12472.65,
+            "current_value": 12266.099853515625,
+            "unrealized_pnl": -206.55014648437464,
+            "pnl_pct": -1.65602455359827,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "JPM",
+            "shares": 20.0,
+            "avg_cost": 299.0,
+            "current_price": 303.44000244140625,
+            "cost_basis": 5980.0,
+            "current_value": 6068.800048828125,
+            "unrealized_pnl": 88.800048828125,
+            "pnl_pct": 1.4849506492997493,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "NBR",
+            "shares": 100.0,
+            "avg_cost": 100.51,
+            "current_price": 102.5199966430664,
+            "cost_basis": 10051.0,
+            "current_value": 10251.99966430664,
+            "unrealized_pnl": 200.99966430664062,
+            "pnl_pct": 1.9997976749242925,
+            "sector": "Unknown",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "SOFI",
+            "shares": 350.0,
+            "avg_cost": 16.29,
+            "current_price": 15.335000038146973,
+            "cost_basis": 5701.5,
+            "current_value": 5367.25001335144,
+            "unrealized_pnl": -334.24998664855957,
+            "pnl_pct": -5.862492092406552,
+            "sector": "Financials",
+            "strategy": "trade"
+        },
+        {
+            "ticker": "NVDA",
+            "shares": 40.0,
+            "avg_cost": 227.3355,
+            "current_price": 230.74000549316406,
+            "cost_basis": 9093.42,
+            "current_value": 9229.600219726562,
+            "unrealized_pnl": 136.18021972656243,
+            "pnl_pct": 1.4975687884928048,
+            "sector": "Unknown",
+            "strategy": "trade"
+        }
+    ],
+    "realized_trades_ytd": [
+        {
+            "ticker": "ABBV",
+            "realized_pnl": -293.96,
+            "type": "short_term"
+        },
+        {
+            "ticker": "ASTS",
+            "realized_pnl": 4359.0,
+            "type": "short_term"
+        },
+        {
+            "ticker": "BIDU",
+            "realized_pnl": -246.7,
+            "type": "short_term"
+        },
+        {
+            "ticker": "BMNR",
+            "realized_pnl": -9353.76,
+            "type": "short_term"
+        },
+        {
+            "ticker": "BSOL",
+            "realized_pnl": -1533.95,
+            "type": "short_term"
+        },
+        {
+            "ticker": "CRWD",
+            "realized_pnl": 0.0,
+            "type": "short_term"
+        },
+        {
+            "ticker": "EOSE",
+            "realized_pnl": -408.1,
+            "type": "short_term"
+        },
+        {
+            "ticker": "GEV",
+            "realized_pnl": -35.2,
+            "type": "short_term"
+        },
+        {
+            "ticker": "GME",
+            "realized_pnl": 206.64,
+            "type": "short_term"
+        },
+        {
+            "ticker": "HIMS",
+            "realized_pnl": -310.66,
+            "type": "short_term"
+        },
+        {
+            "ticker": "HOOD",
+            "realized_pnl": -1342.15,
+            "type": "short_term"
+        },
+        {
+            "ticker": "IREN",
+            "realized_pnl": 674.28,
+            "type": "short_term"
+        },
+        {
+            "ticker": "MAGS",
+            "realized_pnl": 1081.34,
+            "type": "short_term"
+        },
+        {
+            "ticker": "META",
+            "realized_pnl": -37.35,
+            "type": "short_term"
+        },
+        {
+            "ticker": "NBIS",
+            "realized_pnl": -133.4,
+            "type": "short_term"
+        },
+        {
+            "ticker": "NFLX",
+            "realized_pnl": -249.8,
+            "type": "short_term"
+        },
+        {
+            "ticker": "NTR",
+            "realized_pnl": -19.53,
+            "type": "short_term"
+        },
+        {
+            "ticker": "NVO",
+            "realized_pnl": -920.1,
+            "type": "short_term"
+        },
+        {
+            "ticker": "OKLO",
+            "realized_pnl": -190.25,
+            "type": "short_term"
+        },
+        {
+            "ticker": "RBLX",
+            "realized_pnl": -704.8,
+            "type": "short_term"
+        },
+        {
+            "ticker": "RKLB",
+            "realized_pnl": 1045.26,
+            "type": "short_term"
+        },
+        {
+            "ticker": "SLV",
+            "realized_pnl": -393.46,
+            "type": "short_term"
+        },
+        {
+            "ticker": "SOFI",
+            "realized_pnl": -646.17,
+            "type": "short_term"
+        },
+        {
+            "ticker": "TMQ",
+            "realized_pnl": -355.0,
+            "type": "short_term"
+        },
+        {
+            "ticker": "TSLA",
+            "realized_pnl": -408.08,
+            "type": "short_term"
+        },
+        {
+            "ticker": "XLE",
+            "realized_pnl": 1030.12,
+            "type": "short_term"
+        },
+        {
+            "ticker": "XPEV",
+            "realized_pnl": -718.4,
+            "type": "short_term"
+        },
+        {
+            "ticker": "CRWD",
+            "shares": 15.0,
+            "avg_cost": 451.25666665,
+            "exit_price": 370.0,
+            "realized_pnl": -1218.85,
+            "pnl_pct": -18.01,
+            "date": "2026-03-31"
+        },
+        {
+            "ticker": "ONDS",
+            "shares": 300.0,
+            "avg_cost": 11.34,
+            "exit_price": 8.6,
+            "realized_pnl": -822.0,
+            "pnl_pct": -24.16,
+            "date": "2026-03-31"
+        },
+        {
+            "ticker": "SPY",
+            "shares": 10.0,
+            "avg_cost": 409.2721739,
+            "exit_price": 674.55,
+            "realized_pnl": 2650.278261,
+            "pnl_pct": 64.82,
+            "date": "2026-04-13",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "DELL",
+            "shares": 30.0,
+            "avg_cost": 182.09333335,
+            "exit_price": 183.5,
+            "realized_pnl": 39.7,
+            "pnl_pct": 0.77,
+            "date": "2026-04-14",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "AVGO",
+            "shares": 7.0,
+            "avg_cost": 333.96666665,
+            "exit_price": 406.05,
+            "realized_pnl": 502.083333,
+            "pnl_pct": 21.58,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 13.0,
+            "avg_cost": 62.41,
+            "exit_price": 60.91,
+            "realized_pnl": -22.0,
+            "pnl_pct": -2.4,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 37.0,
+            "avg_cost": 62.41,
+            "exit_price": 60.9,
+            "realized_pnl": -55.87,
+            "pnl_pct": -2.42,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "TSLA",
+            "shares": 9.0,
+            "avg_cost": 451.87889,
+            "exit_price": 400.8,
+            "realized_pnl": -462.2,
+            "pnl_pct": -11.3,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "URA",
+            "shares": 50.0,
+            "avg_cost": 48.1,
+            "exit_price": 55.72,
+            "realized_pnl": 378.5,
+            "pnl_pct": 15.84,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "AVGO",
+            "shares": 7.0,
+            "avg_cost": 333.96666665,
+            "exit_price": 406.05,
+            "realized_pnl": 502.083333,
+            "pnl_pct": 21.58,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 13.0,
+            "avg_cost": 60.91,
+            "exit_price": 60.91,
+            "realized_pnl": -22.0,
+            "pnl_pct": 0.0,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 37.0,
+            "avg_cost": 60.9,
+            "exit_price": 60.9,
+            "realized_pnl": -55.87,
+            "pnl_pct": 0.0,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "TSLA",
+            "shares": 9.0,
+            "avg_cost": 451.87889,
+            "exit_price": 400.8,
+            "realized_pnl": -462.2,
+            "pnl_pct": -11.3,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "URA",
+            "shares": 50.0,
+            "avg_cost": 48.1,
+            "exit_price": 55.72,
+            "realized_pnl": 378.5,
+            "pnl_pct": 15.84,
+            "date": "2026-04-17",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 20.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": 13.28,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 10.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": 9.2,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 15.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": 7.132727,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 10.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": -24.136364,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 30.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": -15.910277,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 3.0,
+            "avg_cost": 95.08613635,
+            "exit_price": 95.01,
+            "realized_pnl": -188.861087,
+            "pnl_pct": -0.08,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 2.0,
+            "avg_cost": 95.01,
+            "exit_price": 95.01,
+            "realized_pnl": -10.005,
+            "pnl_pct": 0.0,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "QQQ",
+            "shares": 30.0,
+            "avg_cost": 370.35168675,
+            "exit_price": 648.01,
+            "realized_pnl": 10299.519355,
+            "pnl_pct": 74.97,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "QQQ",
+            "shares": 20.0,
+            "avg_cost": 370.35168675,
+            "exit_price": 648.37,
+            "realized_pnl": 5834.282953,
+            "pnl_pct": 75.07,
+            "date": "2026-04-20",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "AMZN",
+            "shares": 20.0,
+            "avg_cost": 210.70416665,
+            "exit_price": 255.27,
+            "realized_pnl": 888.816667,
+            "pnl_pct": 21.15,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 50.0,
+            "avg_cost": 65.9284,
+            "exit_price": 68.7,
+            "realized_pnl": 133.66,
+            "pnl_pct": 4.2,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ONDS",
+            "shares": 400.0,
+            "avg_cost": 10.79,
+            "exit_price": 11.03,
+            "realized_pnl": 87.833333,
+            "pnl_pct": 2.22,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "QQQ",
+            "shares": 20.0,
+            "avg_cost": 370.35168675,
+            "exit_price": 655.235,
+            "realized_pnl": 4333.841025,
+            "pnl_pct": 76.92,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ZETA",
+            "shares": 127.0,
+            "avg_cost": 17.13601265,
+            "exit_price": 17.96,
+            "realized_pnl": 156.139565,
+            "pnl_pct": 4.81,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ZETA",
+            "shares": 18.0,
+            "avg_cost": 17.13601265,
+            "exit_price": 17.95,
+            "realized_pnl": 22.304348,
+            "pnl_pct": 4.75,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ZETA",
+            "shares": 50.0,
+            "avg_cost": 17.13601265,
+            "exit_price": 17.96,
+            "realized_pnl": 62.456522,
+            "pnl_pct": 4.81,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ZETA",
+            "shares": 5.0,
+            "avg_cost": 17.13601265,
+            "exit_price": 17.96,
+            "realized_pnl": 6.245652,
+            "pnl_pct": 4.81,
+            "date": "2026-04-22",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "PLTR",
+            "shares": 23.0,
+            "avg_cost": 133.31,
+            "exit_price": 141.9215,
+            "realized_pnl": 194.227291,
+            "pnl_pct": 6.46,
+            "date": "2026-04-23",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "PLTR",
+            "shares": 20.0,
+            "avg_cost": 133.31,
+            "exit_price": 141.9145,
+            "realized_pnl": 170.927209,
+            "pnl_pct": 6.45,
+            "date": "2026-04-23",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "QQQ",
+            "shares": 13.0,
+            "avg_cost": 370.35168675,
+            "exit_price": 651.165,
+            "realized_pnl": 2763.211667,
+            "pnl_pct": 75.82,
+            "date": "2026-04-23",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "TSLA",
+            "shares": 0.8,
+            "avg_cost": 451.87889,
+            "exit_price": 373.14,
+            "realized_pnl": -65.490222,
+            "pnl_pct": -17.42,
+            "date": "2026-04-23",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "TSLA",
+            "shares": 1.2,
+            "avg_cost": 451.87889,
+            "exit_price": 373.15,
+            "realized_pnl": -787.3,
+            "pnl_pct": -17.42,
+            "date": "2026-04-23",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MP",
+            "shares": 50.0,
+            "avg_cost": 65.9284,
+            "exit_price": 60.97,
+            "realized_pnl": -250.5,
+            "pnl_pct": -7.52,
+            "date": "2026-04-24",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ASTS",
+            "shares": 15.0,
+            "avg_cost": 77.55,
+            "exit_price": 77.08,
+            "realized_pnl": -10.126923,
+            "pnl_pct": -0.61,
+            "date": "2026-04-28",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ASTS",
+            "shares": 2.0,
+            "avg_cost": 77.55,
+            "exit_price": 77.08,
+            "realized_pnl": -1.016923,
+            "pnl_pct": -0.61,
+            "date": "2026-04-28",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ASTS",
+            "shares": 39.0,
+            "avg_cost": 77.55,
+            "exit_price": 77.08,
+            "realized_pnl": -19.83,
+            "pnl_pct": -0.61,
+            "date": "2026-04-28",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ASTS",
+            "shares": 5.0,
+            "avg_cost": 77.55,
+            "exit_price": 77.08,
+            "realized_pnl": -2.542308,
+            "pnl_pct": -0.61,
+            "date": "2026-04-28",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ASTS",
+            "shares": 4.0,
+            "avg_cost": 77.55,
+            "exit_price": 77.08,
+            "realized_pnl": -2.033846,
+            "pnl_pct": -0.61,
+            "date": "2026-04-28",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ONDS",
+            "shares": 100.0,
+            "avg_cost": 10.79,
+            "exit_price": 9.51,
+            "realized_pnl": -131.333333,
+            "pnl_pct": -11.86,
+            "date": "2026-04-29",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "ONDS",
+            "shares": 100.0,
+            "avg_cost": 10.79,
+            "exit_price": 9.51,
+            "realized_pnl": -129.25,
+            "pnl_pct": -11.86,
+            "date": "2026-04-29",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "RKLB",
+            "shares": 100.0,
+            "avg_cost": 81.55,
+            "exit_price": 76.845,
+            "realized_pnl": -475.5,
+            "pnl_pct": -5.77,
+            "date": "2026-04-29",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "MSFT",
+            "shares": 16.0,
+            "avg_cost": 392.015,
+            "exit_price": 409.64,
+            "realized_pnl": 277.0,
+            "pnl_pct": 4.5,
+            "date": "2026-04-30",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "NFLX",
+            "shares": 40.0,
+            "avg_cost": 90.0,
+            "exit_price": 85.3,
+            "realized_pnl": -251.5,
+            "pnl_pct": -5.22,
+            "date": "2026-05-11",
+            "source": "ib_flex"
+        },
+        {
+            "ticker": "CEG",
+            "shares": 35.0,
+            "avg_cost": 299.23,
+            "exit_price": 279.0187,
+            "realized_pnl": -712.3955,
+            "pnl_pct": -6.75,
+            "date": "2026-05-13",
+            "source": "ib_flex"
+        }
+    ],
+    "realized_pnl_ytd": 13608.31,
+    "unrealized_pnl_total": 13846.4,
+    "_broker": "Interactive Brokers",
+    "_account": "clientam.com",
+    "_last_updated": "2026-05-14T13:40:44.485857",
+    "last_ib_sync": "2026-03-27T23:53:02.308618+00:00",
+    "last_flex_sync": "2026-05-14T04:13:39.577873"
 }
